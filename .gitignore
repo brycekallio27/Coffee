@@ -1,0 +1,19 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+.vite
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Editor directories and files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
