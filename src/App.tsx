@@ -111,6 +111,8 @@ export default function App() {
 
   const [page, setPage] = useState<Page>("contacts");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [networkDropdownOpen, setNetworkDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -917,9 +919,6 @@ export default function App() {
 
   const profileLabel = profile?.full_name?.trim() || session?.user?.email?.split("@")?.[0] || "User";
   const avatarText = initialsFromName(profileLabel);
-
-  const [networkDropdownOpen, setNetworkDropdownOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinkCls = (active: boolean) =>
     `px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${active ? "bg-white/10 text-white" : "text-white/70 hover:text-white hover:bg-white/5"}`;
