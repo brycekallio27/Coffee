@@ -41,13 +41,14 @@ src/
     ├── ApplicationsPage.tsx    # Job application tracker
     ├── SettingsPage.tsx        # Profile, account, CSV import
     ├── OnboardingPage.tsx      # Post-signup stepper
+    ├── OutreachEmailsPage.tsx  # Email composer + templates
     └── WatchlistPage.tsx       # Network watchlist targets
 ```
 
 ### Key Patterns
 
 - **App.tsx** holds all state and Supabase handlers. Page components are presentational and receive data/callbacks via props.
-- **WatchlistPage** is an exception — it manages its own state and Supabase calls internally.
+- **WatchlistPage** and **OutreachEmailsPage** are exceptions — they manage their own state internally (OutreachEmailsPage receives contacts via props but handles compose/templates locally).
 - **Top nav** (no sidebar) with dropdown for Network/Watchlist, plus Outreach, Applications, Settings.
 - **State-based routing** via a `page` variable in App.tsx (no router library).
 - Use `toast.error()` / `toast.success()` / `toast.info()` from sonner — never `alert()`.
@@ -90,7 +91,7 @@ Configured for Netlify via `netlify.toml`. SPA routing handled by catch-all redi
 
 ## Architectural Decisions
 
-Key decisions are documented in `_openclaw_container/_tasks/DECISIONS.md`. Notable:
+Notable architectural decisions:
 - D-006: New features go in feature folders, not App.tsx
 - D-009: Top nav only, no sidebar
 - D-010: Mobile-friendly is required

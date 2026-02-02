@@ -13,6 +13,7 @@ import ApplicationsPage from "./pages/ApplicationsPage";
 import SettingsPage from "./pages/SettingsPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import WatchlistPage from "./pages/WatchlistPage";
+import OutreachEmailsPage from "./pages/OutreachEmailsPage";
 
 /* =============================== IMPORTANT ===============================
 This update adds a Contact Details page with per-meeting notes (mini folders by date).
@@ -324,6 +325,7 @@ export default function App() {
         resume_url: null,
         avatar_url: null,
       });
+      setPage("onboarding");
       return;
     }
 
@@ -331,6 +333,11 @@ export default function App() {
     setDisplayName((data as any)?.full_name ?? "");
     setMyLinkedInUrl((data as any)?.my_linkedin_url ?? "");
     setNewEmail(session?.user?.email ?? "");
+
+    // Redirect to onboarding if profile is incomplete
+    if (!(data as any)?.full_name?.trim()) {
+      setPage("onboarding");
+    }
   }
 
   useEffect(() => {
@@ -1149,14 +1156,13 @@ export default function App() {
 
 
 
-        {/* OUTREACH EMAILS PAGE (placeholder) */}
+        {/* OUTREACH EMAILS PAGE */}
         {page === "outreach_emails" ? (
-          <div className="mx-auto max-w-7xl px-6 py-6">
-            <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-center backdrop-blur-xl">
-              <h2 className="text-xl font-semibold text-white">Outreach Emails</h2>
-              <p className="mt-2 text-sm text-white/60">Follow-up reminders and AI email drafting coming soon.</p>
-            </div>
-          </div>
+          <OutreachEmailsPage
+            contacts={contacts}
+            inputCls={inputCls}
+            selectCls={selectCls}
+          />
         ) : null}
 
         {/* NETWORK WATCHLIST PAGE */}

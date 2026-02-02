@@ -26,6 +26,7 @@ VITE_SUPABASE_ANON_KEY=your_anon_key
 | `npm run build` | TypeScript check + production build |
 | `npm run lint` | ESLint |
 | `npm run preview` | Preview production build |
+| `npm run verify` | Preflight env check + build |
 
 ## Deploying to Netlify
 
