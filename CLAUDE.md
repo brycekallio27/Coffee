@@ -68,10 +68,11 @@ src/
 - **Application** — company, link, date_applied, status, optional contact_id FK
 - **Profile** — full_name, my_linkedin_url, resume_url, avatar_url
 - **WatchlistTarget** — person_name, company, role, status, next_action_date, notes
+- **ScheduledOutreach** — contact_id (FK), channel (sms/linkedin/email), subject, message, scheduled_at, status (scheduled/sent/skipped)
 
 ### Supabase Tables
 
-SQL creation scripts in App.tsx comments (lines ~10-65) and WatchlistPage.tsx header. Tables: `contacts`, `contact_meetings`, `applications`, `profiles`, `watchlist_targets`. Storage bucket `resumes` (public).
+SQL creation scripts in App.tsx comments (lines ~10-65), WatchlistPage.tsx header, and OutreachEmailsPage.tsx header. Tables: `contacts`, `contact_meetings`, `applications`, `profiles`, `watchlist_targets`, `scheduled_outreach`. Storage bucket `resumes` (public).
 
 ### CSV Import (src/lib/csvHelper.ts)
 

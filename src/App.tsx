@@ -113,6 +113,7 @@ export default function App() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [networkDropdownOpen, setNetworkDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dueOutreachCount, setDueOutreachCount] = useState(0);
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -342,10 +343,20 @@ export default function App() {
     }
   }
 
+  async function checkDueOutreach() {
+    const { data } = await supabase
+      .from("scheduled_outreach")
+      .select("id")
+      .eq("status", "scheduled")
+      .lte("scheduled_at", new Date().toISOString());
+    setDueOutreachCount(data?.length ?? 0);
+  }
+
   useEffect(() => {
     if (session) {
       loadProfile();
       loadContacts();
+      checkDueOutreach();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
@@ -978,9 +989,14 @@ export default function App() {
 
               <button
                 onClick={() => { setPage("outreach_emails"); setSelectedContactId(""); }}
-                className={navLinkCls(page === "outreach_emails")}
+                className={`${navLinkCls(page === "outreach_emails")} relative`}
               >
                 Outreach
+                {dueOutreachCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-black">
+                    {dueOutreachCount}
+                  </span>
+                )}
               </button>
 
               <button
@@ -1058,7 +1074,7 @@ export default function App() {
           <div className="border-t border-white/10 px-4 pb-4 pt-2 md:hidden">
             <button onClick={() => { setPage("contacts"); setSelectedContactId(""); setMobileMenuOpen(false); }} className={`${navLinkCls(page === "contacts" || page === "contact_details")} mb-1 block w-full text-left`}>Network</button>
             <button onClick={() => { setPage("network_watchlist"); setSelectedContactId(""); setMobileMenuOpen(false); }} className={`${navLinkCls(page === "network_watchlist")} mb-1 block w-full text-left`}>Watchlist</button>
-            <button onClick={() => { setPage("outreach_emails"); setSelectedContactId(""); setMobileMenuOpen(false); }} className={`${navLinkCls(page === "outreach_emails")} mb-1 block w-full text-left`}>Outreach</button>
+            <button onClick={() => { setPage("outreach_emails"); setSelectedContactId(""); setMobileMenuOpen(false); }} className={`${navLinkCls(page === "outreach_emails")} mb-1 block w-full text-left relative`}>Outreach{dueOutreachCount > 0 && <span className="ml-2 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-black">{dueOutreachCount}</span>}</button>
             <button onClick={() => { setPage("applications"); setSelectedContactId(""); setMobileMenuOpen(false); }} className={`${navLinkCls(page === "applications")} mb-1 block w-full text-left`}>Applications</button>
             <button onClick={() => { setPage("settings"); setSelectedContactId(""); setMobileMenuOpen(false); }} className={`${navLinkCls(page === "settings")} mb-1 block w-full text-left`}>Settings</button>
           </div>

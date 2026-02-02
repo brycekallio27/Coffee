@@ -63,6 +63,18 @@ export type WatchlistTarget = {
   created_at: string;
 };
 
+export type ScheduledOutreach = {
+  id: string;
+  owner_id: string;
+  contact_id: string | null;
+  channel: string; // "sms" | "linkedin" | "email"
+  subject: string | null;
+  message: string;
+  scheduled_at: string; // ISO 8601 timestamptz
+  status: string; // "scheduled" | "sent" | "skipped"
+  created_at: string;
+};
+
 export type FieldMap = {
   full_name?: string;
   first_name?: string;
