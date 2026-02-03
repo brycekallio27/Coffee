@@ -89,7 +89,7 @@ export default function SettingsPage({
                   disabled={savingProfile}
                   className="rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(56,189,248,0.22)] hover:brightness-110 disabled:opacity-50"
                 >
-                  {savingProfile ? "Saving\u2026" : "Save profile"}
+                  {savingProfile ? "Saving…" : "Save profile"}
                 </button>
               </div>
             </div>
@@ -112,7 +112,7 @@ export default function SettingsPage({
                 disabled={savingProfile}
                 className="rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50"
               >
-                {savingProfile ? "Saving\u2026" : "Update account"}
+                {savingProfile ? "Saving…" : "Update account"}
               </button>
 
               <p className="text-xs text-white/60">Supabase may require confirmation when changing email.</p>
@@ -141,8 +141,8 @@ export default function SettingsPage({
                     Detected mapping:{" "}
                     {Object.entries(importMap)
                       .filter(([, v]) => !!v)
-                      .map(([k, v]) => `${k} \u2190 ${v}`)
-                      .join(" \u2022 ") || "none"}
+                      .map(([k, v]) => `${k} ← ${v}`)
+                      .join(" • ") || "none"}
                   </div>
 
                   <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
@@ -175,19 +175,19 @@ export default function SettingsPage({
                       return (
                         <div key={idx} className="grid grid-cols-5 gap-2 px-4 py-2 text-sm text-white/85">
                           <div className="truncate" title={name}>
-                            {name || "\u2014"}
+                            {name || "—"}
                           </div>
                           <div className="truncate" title={company}>
-                            {company || "\u2014"}
+                            {company || "—"}
                           </div>
                           <div className="truncate" title={title}>
-                            {title || "\u2014"}
+                            {title || "—"}
                           </div>
                           <div className="truncate" title={email}>
-                            {email || "\u2014"}
+                            {email || "—"}
                           </div>
                           <div className="truncate" title={phone}>
-                            {phone || "\u2014"}
+                            {phone || "—"}
                           </div>
                           <div className="col-span-5 h-px w-full bg-white/10" />
                         </div>
@@ -203,7 +203,7 @@ export default function SettingsPage({
                       onClick={importIntoSupabase}
                       className="rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(56,189,248,0.22)] hover:brightness-110 disabled:opacity-50"
                     >
-                      {importing ? "Importing\u2026" : "Import into Coffee?"}
+                      {importing ? "Importing…" : "Import into Coffee?"}
                     </button>
                   </div>
 

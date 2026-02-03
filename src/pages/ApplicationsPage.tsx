@@ -97,7 +97,7 @@ export default function ApplicationsPage({
                   const name = [c.first_name, c.last_name].filter(Boolean).join(" ");
                   return (
                     <option key={c.id} value={c.id}>
-                      {name} {c.company ? `\u2014 ${c.company}` : ""}
+                      {name} {c.company ? `— ${c.company}` : ""}
                     </option>
                   );
                 })}
@@ -162,9 +162,9 @@ export default function ApplicationsPage({
                         <a href={app.link} target="_blank" rel="noreferrer" className="text-cyan-200 hover:underline">
                           View Link
                         </a>
-                      ) : <span className="text-white/40">\u2014</span>}
+                      ) : <span className="text-white/40">—</span>}
                     </div>
-                    <div className="text-sm text-white/80">{app.date_applied || "\u2014"}</div>
+                    <div className="text-sm text-white/80">{app.date_applied || "—"}</div>
                     <div className="text-sm">
                       <span className="inline-block rounded-lg bg-white/10 px-2 py-1 text-xs font-medium text-white/90">
                         {app.status}

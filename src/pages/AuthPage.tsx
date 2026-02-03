@@ -100,7 +100,7 @@ export default function AuthPage({
                       disabled={resettingPw}
                       className="text-left text-xs font-semibold text-cyan-200 hover:underline disabled:opacity-60"
                     >
-                      {resettingPw ? "Sending reset email\u2026" : "Forgot my password"}
+                      {resettingPw ? "Sending reset email…" : "Forgot my password"}
                     </button>
 
                     {resetSent ? <span className="text-xs text-white/60">Reset email sent.</span> : null}

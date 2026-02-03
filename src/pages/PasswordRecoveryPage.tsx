@@ -39,7 +39,7 @@ export default function PasswordRecoveryPage({
                   disabled={recoverySaving}
                   className="rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(56,189,248,0.28)] hover:brightness-110 disabled:opacity-50"
                 >
-                  {recoverySaving ? "Saving\u2026" : "Update Password"}
+                  {recoverySaving ? "Saving…" : "Update Password"}
                 </button>
 
                 <button

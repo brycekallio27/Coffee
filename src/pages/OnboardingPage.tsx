@@ -377,7 +377,7 @@ export default function OnboardingPage({
                 disabled={savingProfile}
                 onClick={handleFinish}
               >
-                {savingProfile ? "Saving\u2026" : "Go to Network"}
+                {savingProfile ? "Saving…" : "Go to Network"}
               </button>
             </div>
           </StepCard>

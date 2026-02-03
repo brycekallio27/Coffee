@@ -332,7 +332,7 @@ export default function WatchlistPage({ inputCls, selectCls }: WatchlistPageProp
                       {t.company}
                     </div>
                     <div className="truncate text-sm text-white/85" title={t.role ?? ""}>
-                      {t.role ?? "\u2014"}
+                      {t.role ?? "—"}
                     </div>
                     <div className="text-sm">
                       <span
@@ -342,7 +342,7 @@ export default function WatchlistPage({ inputCls, selectCls }: WatchlistPageProp
                       </span>
                     </div>
                     <div className="text-sm text-white/80">
-                      {t.next_action_date ?? "\u2014"}
+                      {t.next_action_date ?? "—"}
                     </div>
                     <div className="flex gap-2">
                       <button

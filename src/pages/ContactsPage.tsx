@@ -83,7 +83,7 @@ export default function ContactsPage({
       <div className="lg:col-span-2">
         <Card
           title="Your Network"
-          subtitle={loadingContacts ? "Loading\u2026" : `${contacts.length} connection(s)`}
+          subtitle={loadingContacts ? "Loading…" : `${contacts.length} connection(s)`}
           right={
             <button
               onClick={loadContacts}
@@ -96,7 +96,7 @@ export default function ContactsPage({
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <input
               className={inputCls}
-              placeholder="Search name, company, job title, email, phone\u2026"
+              placeholder="Search name, company, job title, email, phone…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -115,12 +115,12 @@ export default function ContactsPage({
             <div className="h-px w-full bg-white/10" />
 
             {loadingContacts ? (
-              <div className="px-4 py-4 text-sm text-white/70">Loading\u2026</div>
+              <div className="px-4 py-4 text-sm text-white/70">Loading…</div>
             ) : contacts.length === 0 ? (
               <div className="px-4 py-4 text-sm text-white/70">No connections found.</div>
             ) : (
               contacts.map((c) => {
-                const displayName = [c.first_name, c.last_name].filter(Boolean).join(" ") || "\u2014";
+                const displayName = [c.first_name, c.last_name].filter(Boolean).join(" ") || "—";
                 const li = c.linkedin_url ?? "";
 
                 return (
@@ -143,16 +143,16 @@ export default function ContactsPage({
                           </div>
                         )}
                         <div className="mt-0.5 truncate text-xs text-white/60">
-                          {[c.email, c.phone].filter(Boolean).join(" \u2022 ")}
+                          {[c.email, c.phone].filter(Boolean).join(" • ")}
                         </div>
                       </div>
 
                       <div className="truncate text-sm text-white/85" title={c.company ?? ""}>
-                        {c.company ?? "\u2014"}
+                        {c.company ?? "—"}
                       </div>
 
                       <div className="truncate text-sm text-white/85" title={c.title ?? ""}>
-                        {c.title ?? "\u2014"}
+                        {c.title ?? "—"}
                       </div>
 
                       <button

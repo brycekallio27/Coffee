@@ -151,7 +151,7 @@ export default function OutreachEmailsPage({
   const contactDisplayName = (c: Contact) => {
     const name =
       [c.first_name, c.last_name].filter(Boolean).join(" ") || "Unnamed";
-    return c.company ? `${name} \u2014 ${c.company}` : name;
+    return c.company ? `${name} — ${c.company}` : name;
   };
 
   const contactNameById = (id: string | null) => {
@@ -365,7 +365,7 @@ export default function OutreachEmailsPage({
                 value={selectedContactId}
                 onChange={(e) => setSelectedContactId(e.target.value)}
               >
-                <option value="">Select a contact\u2026</option>
+                <option value="">Select a contact…</option>
                 {contacts.map((c) => (
                   <option key={c.id} value={c.id}>
                     {contactDisplayName(c)}
@@ -418,7 +418,7 @@ export default function OutreachEmailsPage({
               </div>
               <textarea
                 className={inputCls + " min-h-[140px] resize-y"}
-                placeholder="Write your message here\u2026"
+                placeholder="Write your message here…"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
               />
@@ -445,7 +445,7 @@ export default function OutreachEmailsPage({
                 className="flex-1 rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(56,189,248,0.25)] hover:brightness-110 disabled:opacity-50"
               >
                 {saving
-                  ? "Saving\u2026"
+                  ? "Saving…"
                   : editingId
                     ? "Update"
                     : "Schedule"}
@@ -506,7 +506,7 @@ export default function OutreachEmailsPage({
           title="Upcoming Outreach"
           subtitle={
             loading
-              ? "Loading\u2026"
+              ? "Loading…"
               : `${scheduledItems.length} scheduled`
           }
           right={
@@ -519,7 +519,7 @@ export default function OutreachEmailsPage({
           }
         >
           {loading ? (
-            <div className="py-4 text-sm text-white/70">Loading\u2026</div>
+            <div className="py-4 text-sm text-white/70">Loading…</div>
           ) : scheduledItems.length === 0 ? (
             <div className="py-4 text-sm text-white/70">
               No scheduled outreach yet. Compose a message and hit Schedule.

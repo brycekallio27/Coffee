@@ -81,28 +81,28 @@ export default function ContactDetailsPage({
                   onClick={() => setPage("contacts")}
                   className="rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
                 >
-                  \u2190 Back
+                  ← Back
                 </button>
               }
             >
               <div className="grid gap-3">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                   <div className="text-sm font-semibold text-white">
-                    {[selectedContact.first_name, selectedContact.last_name].filter(Boolean).join(" ") || "\u2014"}
+                    {[selectedContact.first_name, selectedContact.last_name].filter(Boolean).join(" ") || "—"}
                   </div>
                   <div className="mt-1 text-xs text-white/60">
-                    {[selectedContact.company, selectedContact.title].filter(Boolean).join(" \u2022 ") || "\u2014"}
+                    {[selectedContact.company, selectedContact.title].filter(Boolean).join(" • ") || "—"}
                   </div>
                 </div>
 
                 <div className="grid gap-2 text-sm">
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
                     <div className="text-xs text-white/60">Email</div>
-                    <div className="mt-1 text-white/85">{selectedContact.email ?? "\u2014"}</div>
+                    <div className="mt-1 text-white/85">{selectedContact.email ?? "—"}</div>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
                     <div className="text-xs text-white/60">Phone</div>
-                    <div className="mt-1 text-white/85">{selectedContact.phone ?? "\u2014"}</div>
+                    <div className="mt-1 text-white/85">{selectedContact.phone ?? "—"}</div>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
                     <div className="text-xs text-white/60">LinkedIn</div>
@@ -117,7 +117,7 @@ export default function ContactDetailsPage({
                           Open profile
                         </a>
                       ) : (
-                        <span className="text-white/85">\u2014</span>
+                        <span className="text-white/85">—</span>
                       )}
                     </div>
                   </div>
@@ -183,7 +183,7 @@ export default function ContactDetailsPage({
 
               <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03]">
                 {loadingMeetings ? (
-                  <div className="px-4 py-4 text-sm text-white/70">Loading\u2026</div>
+                  <div className="px-4 py-4 text-sm text-white/70">Loading…</div>
                 ) : meetings.length === 0 ? (
                   <div className="px-4 py-4 text-sm text-white/70">
                     No meetings yet. Click <span className="font-semibold text-white">Add meeting</span> to create the first folder.
@@ -231,7 +231,7 @@ export default function ContactDetailsPage({
                                 disabled={!isDirty || saving}
                                 className="rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50"
                               >
-                                {saving ? "Saving\u2026" : isDirty ? "Save" : "Saved"}
+                                {saving ? "Saving…" : isDirty ? "Save" : "Saved"}
                               </button>
 
                               <button
@@ -239,7 +239,7 @@ export default function ContactDetailsPage({
                                 disabled={deleting}
                                 className="rounded-2xl border border-rose-300/20 bg-rose-500/10 px-3 py-2 text-sm font-semibold text-rose-100 hover:bg-rose-500/20 disabled:opacity-50"
                               >
-                                {deleting ? "Deleting\u2026" : "Delete"}
+                                {deleting ? "Deleting…" : "Delete"}
                               </button>
                             </div>
                           </div>
@@ -247,7 +247,7 @@ export default function ContactDetailsPage({
                           <div className="mt-3">
                             <textarea
                               className="min-h-[160px] w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20 focus:bg-white/10"
-                              placeholder="Call notes\u2026 what you discussed, next steps, reminders, personal details, follow-ups."
+                              placeholder="Call notes… what you discussed, next steps, reminders, personal details, follow-ups."
                               value={draft.notes}
                               onChange={(e) => setMeetingField(m.id, "notes", e.target.value)}
                             />
