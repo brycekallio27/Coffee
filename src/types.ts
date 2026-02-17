@@ -28,6 +28,7 @@ export type Profile = {
   my_linkedin_url: string | null;
   resume_url: string | null;
   avatar_url: string | null;
+  resume_text: string | null;
 };
 
 export type Application = {

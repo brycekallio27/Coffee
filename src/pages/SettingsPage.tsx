@@ -1,5 +1,12 @@
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import Card from "../components/ui/Card";
 import type { Profile, FieldMap } from "../types";
+import {
+  checkOllamaAvailable,
+  getOllamaModels,
+  adjustResumeWithOllama,
+} from "../lib/resumeUtils";
 
 interface SettingsPageProps {
   displayName: string;
@@ -21,6 +28,8 @@ interface SettingsPageProps {
   onPickCsv: (file: File) => void;
   importIntoSupabase: () => void;
   inputCls: string;
+  selectCls: string;
+  reparseResume: () => void;
 }
 
 export default function SettingsPage({
@@ -43,10 +52,75 @@ export default function SettingsPage({
   onPickCsv,
   importIntoSupabase,
   inputCls,
+  selectCls,
+  reparseResume,
 }: SettingsPageProps) {
+  const [jobDescription, setJobDescription] = useState("");
+  const [adjustResult, setAdjustResult] = useState("");
+  const [adjusting, setAdjusting] = useState(false);
+  const [ollamaStatus, setOllamaStatus] = useState<
+    "checking" | "available" | "unavailable"
+  >("checking");
+  const [ollamaModels, setOllamaModels] = useState<string[]>([]);
+  const [selectedModel, setSelectedModel] = useState("");
+
+  useEffect(() => {
+    async function check() {
+      setOllamaStatus("checking");
+      const available = await checkOllamaAvailable();
+      setOllamaStatus(available ? "available" : "unavailable");
+      if (available) {
+        const models = await getOllamaModels();
+        setOllamaModels(models);
+        if (models.length > 0 && !selectedModel) {
+          setSelectedModel(models[0]);
+        }
+      }
+    }
+    check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleAdjust() {
+    if (!profile?.resume_text?.trim()) {
+      toast.error("No resume text available. Upload a PDF resume first.");
+      return;
+    }
+    if (!jobDescription.trim()) {
+      toast.error("Paste a job description first.");
+      return;
+    }
+    if (!selectedModel) {
+      toast.error("No Ollama model selected.");
+      return;
+    }
+
+    setAdjusting(true);
+    setAdjustResult("");
+    try {
+      const result = await adjustResumeWithOllama(
+        profile.resume_text,
+        jobDescription,
+        selectedModel
+      );
+      setAdjustResult(result);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Ollama request failed.");
+    } finally {
+      setAdjusting(false);
+    }
+  }
+
+  function copyResult() {
+    if (!adjustResult) return;
+    navigator.clipboard.writeText(adjustResult);
+    toast.success("Suggestions copied to clipboard.");
+  }
+
   return (
-    <div className="mx-auto max-w-7xl px-6 py-6">
+    <div className="mx-auto max-w-7xl px-6 py-8">
       <div className="grid gap-6 lg:grid-cols-3">
+        {/* Profile — 2/3 */}
         <div className="lg:col-span-2">
           <Card title="Profile" subtitle="This info will power personalization (emails, cover letters, etc.).">
             <div className="grid gap-3">
@@ -54,17 +128,17 @@ export default function SettingsPage({
 
               <input className={inputCls} placeholder="Your LinkedIn URL" value={myLinkedInUrl} onChange={(e) => setMyLinkedInUrl(e.target.value)} />
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="text-sm font-semibold text-white">Resume upload</div>
-                <div className="mt-1 text-xs text-white/60">
-                  Upload PDF/DOC/DOCX to Supabase Storage bucket <span className="font-semibold">resumes</span>.
+              <div className="rounded-input bg-depth-0/30 p-4">
+                <div className="text-sm font-medium text-white">Resume upload</div>
+                <div className="mt-1 text-xs text-white/30">
+                  Upload PDF/DOC/DOCX to Supabase Storage bucket <span className="font-medium text-glow/70">resumes</span>.
                 </div>
 
                 <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <input
                     type="file"
                     accept=".pdf,.doc,.docx,application/pdf"
-                    className="block w-full text-sm text-white/80 file:mr-4 file:rounded-2xl file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-white/15"
+                    className="block w-full text-sm text-white/50 file:mr-4 file:cursor-pointer file:rounded-button file:border-0 file:bg-glow/[0.08] file:px-4 file:py-2 file:text-sm file:font-medium file:text-glow hover:file:bg-glow/15"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
                       if (f) uploadResume(f);
@@ -75,7 +149,7 @@ export default function SettingsPage({
                       href={profile.resume_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                      className="rounded-button bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.08]"
                     >
                       View resume
                     </a>
@@ -87,15 +161,16 @@ export default function SettingsPage({
                 <button
                   onClick={saveProfile}
                   disabled={savingProfile}
-                  className="rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(56,189,248,0.22)] hover:brightness-110 disabled:opacity-50"
+                  className="rounded-button bg-glow/90 px-4 py-2.5 text-sm font-semibold text-depth-0 shadow-[0_0_24px_rgba(0,229,255,0.2)] transition-all hover:bg-glow disabled:opacity-50 cursor-pointer"
                 >
-                  {savingProfile ? "Saving…" : "Save profile"}
+                  {savingProfile ? "Saving..." : "Save profile"}
                 </button>
               </div>
             </div>
           </Card>
         </div>
 
+        {/* Account — 1/3 */}
         <div className="lg:col-span-1">
           <Card title="Account" subtitle="Optional: update email and password.">
             <div className="grid gap-3">
@@ -110,23 +185,157 @@ export default function SettingsPage({
               <button
                 onClick={saveProfile}
                 disabled={savingProfile}
-                className="rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50"
+                className="rounded-button bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.08] disabled:opacity-50 cursor-pointer"
               >
-                {savingProfile ? "Saving…" : "Update account"}
+                {savingProfile ? "Saving..." : "Update account"}
               </button>
 
-              <p className="text-xs text-white/60">Supabase may require confirmation when changing email.</p>
+              <p className="text-xs text-white/25">Supabase may require confirmation when changing email.</p>
             </div>
           </Card>
         </div>
 
+        {/* Resume Adjuster — full width */}
+        <div className="lg:col-span-3">
+          <Card
+            title="Resume Adjuster"
+            subtitle="Paste a job description and get AI-powered keyword suggestions to tailor your resume."
+            right={
+              <div className="flex items-center gap-3">
+                {/* Ollama status indicator */}
+                <div className="flex items-center gap-1.5">
+                  <div
+                    className={`h-2 w-2 rounded-full ${
+                      ollamaStatus === "available"
+                        ? "bg-green-400"
+                        : ollamaStatus === "unavailable"
+                          ? "bg-danger"
+                          : "bg-white/30 animate-pulse"
+                    }`}
+                  />
+                  <span className="text-xs text-white/40">
+                    {ollamaStatus === "available"
+                      ? "Connected"
+                      : ollamaStatus === "unavailable"
+                        ? "Offline"
+                        : "Checking..."}
+                  </span>
+                </div>
+
+                {/* Re-parse button */}
+                {profile?.resume_url && (
+                  <button
+                    onClick={reparseResume}
+                    disabled={savingProfile}
+                    className="rounded-button bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-white/60 transition-colors hover:bg-white/[0.08] disabled:opacity-50 cursor-pointer"
+                  >
+                    Re-parse Resume
+                  </button>
+                )}
+              </div>
+            }
+          >
+            <div className="grid gap-4">
+              {/* Resume text display */}
+              {profile?.resume_text ? (
+                <div className="rounded-input bg-depth-0/30 p-4">
+                  <div className="mb-2 text-xs font-medium text-white/40">Parsed resume text</div>
+                  <div className="max-h-48 overflow-y-auto text-sm text-white/60 whitespace-pre-wrap">
+                    {profile.resume_text}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-input bg-depth-0/30 p-4 text-center">
+                  <p className="text-sm text-white/40">
+                    {profile?.resume_url
+                      ? "Resume uploaded but text not yet extracted. Click \"Re-parse Resume\" above."
+                      : "No resume uploaded yet. Upload a PDF in the Profile section above."}
+                  </p>
+                </div>
+              )}
+
+              {/* Model selector */}
+              {ollamaModels.length > 1 && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-white/40">Ollama model</label>
+                  <select
+                    className={selectCls}
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                  >
+                    {ollamaModels.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Job description textarea */}
+              <textarea
+                className={`${inputCls} min-h-[120px] resize-y`}
+                placeholder="Paste the full job description here..."
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+              />
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleAdjust}
+                  disabled={adjusting || ollamaStatus !== "available" || !profile?.resume_text}
+                  className="rounded-button bg-glow/90 px-4 py-2.5 text-sm font-semibold text-depth-0 shadow-[0_0_24px_rgba(0,229,255,0.2)] transition-all hover:bg-glow disabled:opacity-50 cursor-pointer"
+                >
+                  {adjusting ? "Adjusting..." : "Adjust Resume"}
+                </button>
+
+                {adjustResult && (
+                  <button
+                    onClick={copyResult}
+                    className="rounded-button bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.08] cursor-pointer"
+                  >
+                    Copy Suggestions
+                  </button>
+                )}
+              </div>
+
+              {/* AI output area */}
+              {adjustResult && (
+                <div className="rounded-input bg-depth-0/30 p-4">
+                  <div className="mb-2 text-xs font-medium text-white/40">AI Suggestions</div>
+                  <div className="max-h-96 overflow-y-auto text-sm text-white/70 whitespace-pre-wrap">
+                    {adjustResult}
+                  </div>
+                </div>
+              )}
+
+              {/* Ollama offline help */}
+              {ollamaStatus === "unavailable" && (
+                <div className="rounded-input bg-depth-0/30 border border-white/[0.06] p-4">
+                  <p className="text-sm text-white/50">
+                    Ollama is not running. Start it with:
+                  </p>
+                  <code className="mt-2 block rounded-badge bg-white/[0.06] px-3 py-2 text-sm text-glow font-mono">
+                    ollama serve
+                  </code>
+                  <p className="mt-2 text-xs text-white/30">
+                    If you haven't installed Ollama yet: <code className="rounded-badge bg-white/[0.06] px-1 py-0.5">brew install ollama</code> then <code className="rounded-badge bg-white/[0.06] px-1 py-0.5">ollama pull llama3.2</code>
+                  </p>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+
+        {/* Import — full width */}
         <div className="lg:col-span-3">
           <Card title="Import Network (CSV)" subtitle="Smart Import detects columns automatically (email, phone, name, company, job title).">
             <div className="grid gap-4">
               <input
                 type="file"
                 accept=".csv,text/csv"
-                className="block w-full text-sm text-white/80 file:mr-4 file:rounded-2xl file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-white/15"
+                className="block w-full text-sm text-white/50 file:mr-4 file:cursor-pointer file:rounded-button file:border-0 file:bg-glow/[0.08] file:px-4 file:py-2 file:text-sm file:font-medium file:text-glow hover:file:bg-glow/15"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (!f) return;
@@ -135,28 +344,28 @@ export default function SettingsPage({
               />
 
               {importFileName ? (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                  <div className="text-sm font-semibold text-white">Loaded: {importFileName}</div>
-                  <div className="mt-1 text-xs text-white/60">
+                <div className="rounded-input bg-depth-0/30 p-4">
+                  <div className="text-sm font-medium text-white">Loaded: {importFileName}</div>
+                  <div className="mt-1 font-data text-xs text-white/30">
                     Detected mapping:{" "}
                     {Object.entries(importMap)
                       .filter(([, v]) => !!v)
-                      .map(([k, v]) => `${k} ← ${v}`)
-                      .join(" • ") || "none"}
+                      .map(([k, v]) => `${k} \u2190 ${v}`)
+                      .join(" \u2022 ") || "none"}
                   </div>
 
-                  <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
-                    <div className="bg-white/[0.04] px-4 py-2 text-xs text-white/60">Preview: {importRows.length} row(s)</div>
+                  <div className="mt-4 rounded-section bg-depth-0/40">
+                    <div className="px-4 py-2 text-xs text-white/30">Preview: {importRows.length} row(s)</div>
 
-                    <div className="grid grid-cols-5 gap-2 px-4 py-2 text-xs uppercase tracking-wide text-white/60">
+                    <div className="grid grid-cols-5 gap-2 px-4 py-2 text-xs uppercase tracking-wider text-white/25 font-medium">
                       <div>Name</div>
                       <div>Company</div>
-                      <div>Job Title</div>
+                      <div>Title</div>
                       <div>Email</div>
                       <div>Phone</div>
                     </div>
 
-                    <div className="h-px w-full bg-white/10" />
+                    <div className="h-px w-full bg-white/[0.04]" />
 
                     {importRows.slice(0, 10).map((r, idx) => {
                       const map = importMap;
@@ -173,41 +382,41 @@ export default function SettingsPage({
                       const phone = map.phone ? r[map.phone] : "";
 
                       return (
-                        <div key={idx} className="grid grid-cols-5 gap-2 px-4 py-2 text-sm text-white/85">
+                        <div key={idx} className="grid grid-cols-5 gap-2 px-4 py-2 text-sm text-white/50">
                           <div className="truncate" title={name}>
-                            {name || "—"}
+                            {name || "\u2014"}
                           </div>
                           <div className="truncate" title={company}>
-                            {company || "—"}
+                            {company || "\u2014"}
                           </div>
                           <div className="truncate" title={title}>
-                            {title || "—"}
+                            {title || "\u2014"}
                           </div>
-                          <div className="truncate" title={email}>
-                            {email || "—"}
+                          <div className="truncate font-data" title={email}>
+                            {email || "\u2014"}
                           </div>
-                          <div className="truncate" title={phone}>
-                            {phone || "—"}
+                          <div className="truncate font-data" title={phone}>
+                            {phone || "\u2014"}
                           </div>
-                          <div className="col-span-5 h-px w-full bg-white/10" />
+                          <div className="col-span-5 h-px w-full bg-white/[0.03]" />
                         </div>
                       );
                     })}
 
-                    <div className="px-4 py-2 text-xs text-white/60">Showing first 10 rows. All rows will import.</div>
+                    <div className="px-4 py-2 text-xs text-white/20">Showing first 10 rows. All rows will import.</div>
                   </div>
 
                   <div className="mt-4 flex items-center justify-end gap-2">
                     <button
                       disabled={importing || importRows.length === 0}
                       onClick={importIntoSupabase}
-                      className="rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(56,189,248,0.22)] hover:brightness-110 disabled:opacity-50"
+                      className="rounded-button bg-glow/90 px-4 py-2.5 text-sm font-semibold text-depth-0 shadow-[0_0_24px_rgba(0,229,255,0.2)] transition-all hover:bg-glow disabled:opacity-50 cursor-pointer"
                     >
-                      {importing ? "Importing…" : "Import into Coffee?"}
+                      {importing ? "Importing..." : "Import into Coffee?"}
                     </button>
                   </div>
 
-                  <p className="mt-3 text-xs text-white/60">
+                  <p className="mt-3 text-xs text-white/25">
                     If LinkedIn doesn't import: Sheets often exports only visible hyperlink text, not the URL. Import, then add LinkedIn via Edit.
                   </p>
                 </div>

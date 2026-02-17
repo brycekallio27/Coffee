@@ -5,6 +5,7 @@ import type { Contact, ContactMeeting, Profile, Application, Page, FieldMap } fr
 import Modal from "./components/ui/Modal";
 import { initialsFromName, todayISODate, formatDateLabel } from "./lib/utils";
 import { parseCsv, inferFieldMap, splitName, isEmail, cleanLinkedIn, cleanPhone } from "./lib/csvHelper";
+import { parsePdfToText, parsePdfFromUrl } from "./lib/resumeUtils";
 import AuthPage from "./pages/AuthPage";
 import PasswordRecoveryPage from "./pages/PasswordRecoveryPage";
 import ContactsPage from "./pages/ContactsPage";
@@ -84,20 +85,20 @@ create index if not exists idx_applications_contact_id on public.applications(co
 export default function App() {
   if (supabaseMisconfigured) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#050b14] text-white p-8">
+      <div className="flex min-h-screen items-center justify-center bg-depth-0 p-8 text-white">
         <div className="max-w-md text-center space-y-4">
-          <h1 className="text-2xl font-bold text-red-400">Configuration Error</h1>
-          <p className="text-white/70">
+          <h1 className="text-2xl font-bold text-danger">Configuration Error</h1>
+          <p className="text-white/50">
             Required environment variables are missing. Set the following in your{" "}
-            <code className="bg-white/10 px-1.5 py-0.5 rounded text-sm">.env.local</code> file:
+            <code className="rounded-badge bg-white/[0.06] px-1.5 py-0.5 text-sm text-glow">.env.local</code> file:
           </p>
-          <ul className="text-left text-sm bg-white/5 rounded-xl p-4 space-y-1 font-mono">
+          <ul className="space-y-1 rounded-input bg-depth-1 p-4 text-left text-sm font-mono text-glow">
             <li>VITE_SUPABASE_URL</li>
             <li>VITE_SUPABASE_ANON_KEY</li>
           </ul>
-          <p className="text-white/50 text-sm">
-            Copy <code className="bg-white/10 px-1 py-0.5 rounded">.env.example</code> to{" "}
-            <code className="bg-white/10 px-1 py-0.5 rounded">.env.local</code> and fill in the values.
+          <p className="text-sm text-white/30">
+            Copy <code className="rounded-badge bg-white/[0.06] px-1 py-0.5">.env.example</code> to{" "}
+            <code className="rounded-badge bg-white/[0.06] px-1 py-0.5">.env.local</code> and fill in the values.
           </p>
         </div>
       </div>
@@ -192,9 +193,9 @@ export default function App() {
   const [recoverySaving, setRecoverySaving] = useState(false);
 
   const inputCls =
-    "w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20 focus:bg-white/10";
+    "w-full rounded-input bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-white/25 outline-none transition-all duration-200 border border-white/[0.06] focus:border-glow/30 focus:bg-white/[0.06] focus:ring-1 focus:ring-glow/15";
   const selectCls =
-    "w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-white/20 focus:bg-white/10";
+    "w-full rounded-input bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none transition-all duration-200 border border-white/[0.06] focus:border-glow/30 focus:ring-1 focus:ring-glow/15";
 
   /* ----------------------------- Auth session ----------------------------- */
 
@@ -202,7 +203,6 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      // When user clicks the reset-password email link, Supabase fires PASSWORD_RECOVERY
       if (event === "PASSWORD_RECOVERY") {
         setRecoveryMode(true);
         setResetSent(false);
@@ -235,7 +235,6 @@ export default function App() {
     setMeetingDirty({});
     setProfileMenuOpen(false);
 
-    // reset auth flow UI
     setResetSent(false);
     setResettingPw(false);
     setRecoveryMode(false);
@@ -258,10 +257,7 @@ export default function App() {
 
     setResettingPw(true);
     try {
-      // IMPORTANT: Supabase Auth settings must allow this redirect URL:
-      // Auth -> URL Configuration -> Site URL / Additional Redirect URLs
       const redirectTo = window.location.origin;
-
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
 
@@ -303,7 +299,7 @@ export default function App() {
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, my_linkedin_url, resume_url, avatar_url")
+      .select("id, full_name, my_linkedin_url, resume_url, avatar_url, resume_text")
       .eq("id", session.user.id)
       .maybeSingle();
 
@@ -327,6 +323,7 @@ export default function App() {
         my_linkedin_url: null,
         resume_url: null,
         avatar_url: null,
+        resume_text: null,
       });
       setPage("onboarding");
       return;
@@ -337,7 +334,6 @@ export default function App() {
     setMyLinkedInUrl((data as any)?.my_linkedin_url ?? "");
     setNewEmail(session?.user?.email ?? "");
 
-    // Redirect to onboarding if profile is incomplete
     if (!(data as any)?.full_name?.trim()) {
       setPage("onboarding");
     }
@@ -411,7 +407,20 @@ export default function App() {
       const { data } = supabase.storage.from("resumes").getPublicUrl(path);
       const publicUrl = data.publicUrl;
 
-      const { error } = await supabase.from("profiles").update({ resume_url: publicUrl }).eq("id", session.user.id);
+      const updatePayload: { resume_url: string; resume_text?: string } = { resume_url: publicUrl };
+
+      if (ext === "pdf") {
+        try {
+          const text = await parsePdfToText(file);
+          updatePayload.resume_text = text;
+        } catch {
+          toast.info("Resume uploaded, but text extraction failed. You can re-parse later.");
+        }
+      } else {
+        toast.info("Non-PDF resume uploaded. Text extraction is only available for PDF files.");
+      }
+
+      const { error } = await supabase.from("profiles").update(updatePayload).eq("id", session.user.id);
       if (error) throw error;
 
       await loadProfile();
@@ -421,6 +430,31 @@ export default function App() {
         e?.message ??
         "Resume upload failed. Make sure you created a Storage bucket named 'resumes' (public is easiest)."
       );
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  async function reparseResume() {
+    if (!session?.user?.id || !profile?.resume_url) return;
+
+    if (!profile.resume_url.toLowerCase().endsWith(".pdf")) {
+      toast.error("Re-parse is only available for PDF resumes.");
+      return;
+    }
+
+    setSavingProfile(true);
+    try {
+      const text = await parsePdfFromUrl(profile.resume_url);
+      const { error } = await supabase
+        .from("profiles")
+        .update({ resume_text: text })
+        .eq("id", session.user.id);
+      if (error) throw error;
+      await loadProfile();
+      toast.success("Resume text re-parsed.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to re-parse resume.");
     } finally {
       setSavingProfile(false);
     }
@@ -439,7 +473,6 @@ export default function App() {
 
     setLoadingApps(false);
     if (error) {
-      // alert(error.message); // suppress if table not exists, or handle gracefully
       console.error(error);
       return;
     }
@@ -890,9 +923,6 @@ export default function App() {
 
   /* =============================== Password Recovery Screen =============================== */
 
-  // If user clicked the recovery email link, force password update UI before app shell.
-  // NOTE: This intentionally does NOT require `session` to be non-null, because Supabase can briefly report null
-  // while processing the recovery token.
   if (recoveryMode) {
     return (
       <PasswordRecoveryPage
@@ -932,54 +962,69 @@ export default function App() {
   const avatarText = initialsFromName(profileLabel);
 
   const navLinkCls = (active: boolean) =>
-    `px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${active ? "bg-white/10 text-white" : "text-white/70 hover:text-white hover:bg-white/5"}`;
+    `px-3 py-2 rounded-button text-sm font-medium cursor-pointer transition-all duration-200 ${
+      active
+        ? "bg-glow/10 text-glow"
+        : "text-white/45 hover:text-white/80 hover:bg-white/[0.04]"
+    }`;
 
   return (
     <div className="min-h-screen text-white">
-      <div className="fixed inset-0 -z-10 bg-[#050b14]" />
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_12%_10%,rgba(34,211,238,0.28),transparent_45%),radial-gradient(circle_at_70%_0%,rgba(59,130,246,0.22),transparent_55%),radial-gradient(circle_at_25%_90%,rgba(168,85,247,0.22),transparent_55%),radial-gradient(circle_at_88%_85%,rgba(16,185,129,0.16),transparent_45%)]" />
+      {/* Living canvas background */}
+      <div className="fixed inset-0 -z-10 bg-depth-0" />
+      <div className="fixed inset-0 -z-10 living-canvas" />
 
       {/* Top Nav */}
-      <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#0b1420]/90 backdrop-blur-xl">
+      <nav className="sticky top-0 z-50 bg-depth-0/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-6">
           {/* Left: Logo + Nav Links */}
           <div className="flex items-center gap-1 md:gap-2">
             <button
               onClick={() => { setPage("contacts"); setSelectedContactId(""); }}
-              className="mr-2 flex items-center gap-2 md:mr-4"
+              className="mr-2 flex items-center gap-2 md:mr-4 cursor-pointer"
             >
-              <svg className="h-8 w-8 text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg className="h-7 w-7 text-glow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
                 <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
                 <path d="M6 1v3" /><path d="M10 1v3" /><path d="M14 1v3" />
               </svg>
-              <span className="hidden text-base font-bold md:inline">Coffee?</span>
+              <span className="hidden text-base font-bold text-white md:inline">Coffee?</span>
             </button>
 
             {/* Desktop nav links */}
             <div className="hidden items-center gap-1 md:flex">
-              {/* Your Profile dropdown (Network + Watchlist) */}
               <div className="relative">
                 <button
                   onClick={() => setNetworkDropdownOpen((v) => !v)}
                   className={navLinkCls(page === "contacts" || page === "contact_details" || page === "network_watchlist")}
                 >
-                  Network <span className="ml-0.5 text-white/50">▾</span>
+                  Network
+                  <svg className="ml-1 inline h-3 w-3 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
                 </button>
                 {networkDropdownOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setNetworkDropdownOpen(false)} />
-                    <div className="absolute left-0 z-50 mt-1 w-48 overflow-hidden rounded-xl border border-white/10 bg-[#0b1420]/95 shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+                    <div className="absolute left-0 z-50 mt-2 w-48 overflow-hidden rounded-section bg-depth-1 shadow-[0_16px_48px_rgba(0,0,0,0.5)]">
                       <button
                         onClick={() => { setPage("contacts"); setSelectedContactId(""); setNetworkDropdownOpen(false); }}
-                        className="w-full px-4 py-3 text-left text-sm font-semibold text-white hover:bg-white/5"
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-white/70 transition-colors hover:bg-white/[0.04] hover:text-white cursor-pointer"
                       >
+                        <svg className="h-4 w-4 text-glow/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
                         Network
                       </button>
+                      <div className="mx-3 h-px bg-white/[0.06]" />
                       <button
                         onClick={() => { setPage("network_watchlist"); setSelectedContactId(""); setNetworkDropdownOpen(false); }}
-                        className="w-full px-4 py-3 text-left text-sm font-semibold text-white hover:bg-white/5"
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-white/70 transition-colors hover:bg-white/[0.04] hover:text-white cursor-pointer"
                       >
+                        <svg className="h-4 w-4 text-glow/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
                         Watchlist
                       </button>
                     </div>
@@ -993,7 +1038,7 @@ export default function App() {
               >
                 Outreach
                 {dueOutreachCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-black">
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-glow px-1 text-[10px] font-bold text-depth-0">
                     {dueOutreachCount}
                   </span>
                 )}
@@ -1021,32 +1066,42 @@ export default function App() {
             <div className="relative">
               <button
                 onClick={() => setProfileMenuOpen((v) => !v)}
-                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-2 py-1.5 hover:bg-white/10 md:gap-3 md:px-3 md:py-2"
+                className="flex items-center gap-2 rounded-button bg-white/[0.04] px-2 py-1.5 transition-colors hover:bg-white/[0.08] md:gap-3 md:px-3 md:py-2 cursor-pointer"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 via-sky-500 to-indigo-500 text-xs font-bold text-white shadow-[0_0_25px_rgba(34,211,238,0.18)]">
+                <div className="flex h-8 w-8 items-center justify-center rounded-button bg-glow/15 text-xs font-bold text-glow">
                   {avatarText}
                 </div>
                 <div className="hidden text-left md:block">
-                  <div className="text-sm font-semibold">{profileLabel}</div>
-                  <div className="text-xs text-white/60">{session?.user?.email}</div>
+                  <div className="text-sm font-medium text-white">{profileLabel}</div>
+                  <div className="font-data text-white/30">{session?.user?.email}</div>
                 </div>
-                <span className="text-white/50">▾</span>
+                <svg className="h-3 w-3 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
 
               {profileMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setProfileMenuOpen(false)} />
-                  <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-white/10 bg-[#0b1420]/95 shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+                  <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-section bg-depth-1 shadow-[0_16px_48px_rgba(0,0,0,0.5)]">
                     <button
                       onClick={() => { setPage("settings"); setSelectedContactId(""); setProfileMenuOpen(false); }}
-                      className="w-full px-4 py-3 text-left text-sm font-semibold text-white hover:bg-white/5"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-white/70 transition-colors hover:bg-white/[0.04] hover:text-white cursor-pointer"
                     >
+                      <svg className="h-4 w-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
                       Settings
                     </button>
+                    <div className="mx-3 h-px bg-white/[0.06]" />
                     <button
                       onClick={() => { setProfileMenuOpen(false); signOut(); }}
-                      className="w-full px-4 py-3 text-left text-sm font-semibold text-white hover:bg-white/5"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-white/70 transition-colors hover:bg-white/[0.04] hover:text-white cursor-pointer"
                     >
+                      <svg className="h-4 w-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
                       Sign Out
                     </button>
                   </div>
@@ -1057,13 +1112,13 @@ export default function App() {
             {/* Mobile hamburger */}
             <button
               onClick={() => setMobileMenuOpen((v) => !v)}
-              className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 p-2 hover:bg-white/10 md:hidden"
+              className="inline-flex items-center justify-center rounded-button bg-white/[0.04] p-2 transition-colors hover:bg-white/[0.08] md:hidden cursor-pointer"
               aria-label="Open menu"
             >
               <div className="grid gap-1">
-                <span className="h-0.5 w-4 rounded bg-white/80" />
-                <span className="h-0.5 w-4 rounded bg-white/80" />
-                <span className="h-0.5 w-4 rounded bg-white/80" />
+                <span className="h-0.5 w-4 rounded bg-white/60" />
+                <span className="h-0.5 w-4 rounded bg-white/60" />
+                <span className="h-0.5 w-4 rounded bg-white/60" />
               </div>
             </button>
           </div>
@@ -1071,17 +1126,17 @@ export default function App() {
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="border-t border-white/10 px-4 pb-4 pt-2 md:hidden">
+          <div className="border-t border-white/[0.06] px-4 pb-4 pt-2 md:hidden">
             <button onClick={() => { setPage("contacts"); setSelectedContactId(""); setMobileMenuOpen(false); }} className={`${navLinkCls(page === "contacts" || page === "contact_details")} mb-1 block w-full text-left`}>Network</button>
             <button onClick={() => { setPage("network_watchlist"); setSelectedContactId(""); setMobileMenuOpen(false); }} className={`${navLinkCls(page === "network_watchlist")} mb-1 block w-full text-left`}>Watchlist</button>
-            <button onClick={() => { setPage("outreach_emails"); setSelectedContactId(""); setMobileMenuOpen(false); }} className={`${navLinkCls(page === "outreach_emails")} mb-1 block w-full text-left relative`}>Outreach{dueOutreachCount > 0 && <span className="ml-2 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-black">{dueOutreachCount}</span>}</button>
+            <button onClick={() => { setPage("outreach_emails"); setSelectedContactId(""); setMobileMenuOpen(false); }} className={`${navLinkCls(page === "outreach_emails")} mb-1 block w-full text-left relative`}>Outreach{dueOutreachCount > 0 && <span className="ml-2 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-glow px-1 text-[10px] font-bold text-depth-0">{dueOutreachCount}</span>}</button>
             <button onClick={() => { setPage("applications"); setSelectedContactId(""); setMobileMenuOpen(false); }} className={`${navLinkCls(page === "applications")} mb-1 block w-full text-left`}>Applications</button>
             <button onClick={() => { setPage("settings"); setSelectedContactId(""); setMobileMenuOpen(false); }} className={`${navLinkCls(page === "settings")} mb-1 block w-full text-left`}>Settings</button>
           </div>
         )}
       </nav>
 
-      <div>
+      <div className="page-enter">
 
         {/* APPLICATIONS PAGE */}
         {page === "applications" ? (
@@ -1169,12 +1224,11 @@ export default function App() {
           />
         ) : null}
 
-
-
         {/* OUTREACH EMAILS PAGE */}
         {page === "outreach_emails" ? (
           <OutreachEmailsPage
             contacts={contacts}
+            profile={profile}
             inputCls={inputCls}
             selectCls={selectCls}
           />
@@ -1222,6 +1276,8 @@ export default function App() {
             onPickCsv={onPickCsv}
             importIntoSupabase={importIntoSupabase}
             inputCls={inputCls}
+            selectCls={selectCls}
+            reparseResume={reparseResume}
           />
         ) : null}
 
@@ -1257,13 +1313,13 @@ export default function App() {
                   setEditOpen(false);
                   setEditContact(null);
                 }}
-                className="rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                className="rounded-button border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/[0.06] cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={saveEdit}
-                className="rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(56,189,248,0.22)] hover:brightness-110"
+                className="rounded-button bg-glow/90 px-4 py-2.5 text-sm font-semibold text-depth-0 shadow-[0_0_24px_rgba(0,229,255,0.2)] transition-all hover:bg-glow cursor-pointer"
               >
                 Save changes
               </button>

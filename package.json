@@ -1,8 +1,10 @@
 {
-  "name": "gaj-dash",
+  "name": "coffee",
+  "productName": "Coffee",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -10,13 +12,20 @@
     "preview": "vite preview",
     "preflight": "node scripts/preflight.mjs",
     "verify": "node scripts/preflight.mjs && npm run build",
-    "worker": "npx tsx scripts/worker.ts"
+    "worker": "npx tsx scripts/worker.ts",
+    "electron:compile": "tsc -p electron/tsconfig.json",
+    "electron:dev": "concurrently -k \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron:compile && NODE_ENV=development electron .\"",
+    "electron:build": "npm run build && npm run electron:compile && electron-builder",
+    "electron:start": "npm run electron:compile && electron ."
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.89.0",
     "@tailwindcss/vite": "^4.1.18",
+    "auto-launch": "^5.0.6",
     "dotenv": "^17.2.3",
+    "electron-store": "^11.0.2",
     "papaparse": "^5.5.3",
+    "pdfjs-dist": "^5.4.624",
     "puppeteer": "^24.36.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -25,10 +34,14 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@types/auto-launch": "^5.0.5",
     "@types/node": "^24.10.4",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "concurrently": "^9.2.1",
+    "electron": "^40.4.1",
+    "electron-builder": "^26.7.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
@@ -36,6 +49,55 @@
     "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "wait-on": "^9.0.4"
+  },
+  "build": {
+    "appId": "com.coffee.app",
+    "productName": "Coffee",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "public/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "public/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "Coffee",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "extraResources": [
+      {
+        "from": ".env.local",
+        "to": ".env.local",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
   }
 }
