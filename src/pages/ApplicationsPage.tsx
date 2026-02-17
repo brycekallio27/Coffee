@@ -26,6 +26,13 @@ interface ApplicationsPageProps {
   selectCls: string;
 }
 
+const STATUS_STYLE: Record<string, string> = {
+  Applied: "bg-white/[0.04] text-white/50",
+  Interviewing: "bg-glow/[0.08] text-glow/80",
+  Accepted: "bg-glow/[0.12] text-glow",
+  Rejected: "bg-danger/[0.08] text-danger/70",
+};
+
 export default function ApplicationsPage({
   applications,
   loadingApps,
@@ -51,27 +58,28 @@ export default function ApplicationsPage({
   selectCls,
 }: ApplicationsPageProps) {
   return (
-    <div className="mx-auto grid max-w-7xl gap-6 px-6 py-6 lg:grid-cols-3">
+    <div className="mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-3">
+      {/* Form — 1/3 */}
       <div className="lg:col-span-1">
         <Card title={editingAppId ? "Edit Application" : "Track Application"} subtitle="Keep tabs on where you've applied.">
           <div className="grid gap-3">
             <div>
-              <div className="mb-1 text-xs font-semibold text-white/70">Company Name</div>
+              <div className="mb-1 text-xs font-medium text-white/35">Company Name</div>
               <input className={inputCls} placeholder="e.g. Acme Corp" value={appCompany} onChange={(e) => setAppCompany(e.target.value)} />
             </div>
 
             <div>
-              <div className="mb-1 text-xs font-semibold text-white/70">Application Link (optional)</div>
+              <div className="mb-1 text-xs font-medium text-white/35">Application Link (optional)</div>
               <input className={inputCls} placeholder="https://..." value={appLink} onChange={(e) => setAppLink(e.target.value)} />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <div className="mb-1 text-xs font-semibold text-white/70">Date Applied</div>
+                <div className="mb-1 text-xs font-medium text-white/35">Date Applied</div>
                 <input className={inputCls} type="date" value={appDate} onChange={(e) => setAppDate(e.target.value)} />
               </div>
               <div>
-                <div className="mb-1 text-xs font-semibold text-white/70">Status</div>
+                <div className="mb-1 text-xs font-medium text-white/35">Status</div>
                 <select
                   className={selectCls}
                   value={appStatus}
@@ -86,7 +94,7 @@ export default function ApplicationsPage({
             </div>
 
             <div>
-              <div className="mb-1 text-xs font-semibold text-white/70">Linked Contact (optional)</div>
+              <div className="mb-1 text-xs font-medium text-white/35">Linked Contact (optional)</div>
               <select
                 className={selectCls}
                 value={appContactId}
@@ -97,7 +105,7 @@ export default function ApplicationsPage({
                   const name = [c.first_name, c.last_name].filter(Boolean).join(" ");
                   return (
                     <option key={c.id} value={c.id}>
-                      {name} {c.company ? `— ${c.company}` : ""}
+                      {name} {c.company ? `\u2014 ${c.company}` : ""}
                     </option>
                   );
                 })}
@@ -108,14 +116,14 @@ export default function ApplicationsPage({
               <button
                 onClick={saveApplication}
                 disabled={savingApp}
-                className="w-full rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(56,189,248,0.25)] hover:brightness-110 disabled:opacity-50"
+                className="w-full rounded-button bg-glow/90 px-4 py-2.5 text-sm font-semibold text-depth-0 shadow-[0_0_24px_rgba(0,229,255,0.2)] transition-all duration-300 hover:bg-glow active:scale-[0.98] disabled:opacity-50 cursor-pointer"
               >
-                {savingApp ? "Saving..." : editingAppId ? "Update" : "Add App"}
+                {savingApp ? "Saving..." : editingAppId ? "Update" : "Add Application"}
               </button>
               {editingAppId && (
                 <button
                   onClick={cancelEditApp}
-                  className="rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                  className="rounded-button bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.08] cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -125,67 +133,73 @@ export default function ApplicationsPage({
         </Card>
       </div>
 
+      {/* List — 2/3 */}
       <div className="lg:col-span-2">
         <Card
-          title="My Applications"
-          subtitle={loadingApps ? "Loading..." : `${applications.length} application(s)`}
+          title="Applications"
+          subtitle={loadingApps ? "Loading..." : `${applications.length} tracked`}
           right={
             <button
               onClick={loadApplications}
-              className="rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
+              className="rounded-button bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white cursor-pointer"
             >
               Refresh
             </button>
           }
         >
-          <div className="mt-2 rounded-2xl border border-white/10 bg-white/[0.03]">
-            <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr] items-center gap-3 px-4 py-3 text-xs uppercase tracking-wide text-white/60">
+          <div className="mt-2 rounded-section bg-depth-0/40">
+            <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr] items-center gap-3 px-4 py-3 text-xs uppercase tracking-wider text-white/30 font-medium">
               <div>Company</div>
               <div>Link</div>
               <div>Date</div>
               <div>Status</div>
               <div>Action</div>
             </div>
-            <div className="h-px w-full bg-white/10" />
+            <div className="h-px w-full bg-white/[0.04]" />
 
             {loadingApps ? (
-              <div className="px-4 py-4 text-sm text-white/70">Loading...</div>
+              <div className="px-4 py-8 text-center text-sm text-white/40">Loading applications...</div>
             ) : applications.length === 0 ? (
-              <div className="px-4 py-4 text-sm text-white/70">No applications tracked yet.</div>
+              <div className="px-6 py-10 text-center">
+                <p className="text-sm text-white/50">No applications tracked yet.</p>
+                <p className="mt-1 text-xs text-white/25">
+                  The process is the progress. Start tracking.
+                </p>
+              </div>
             ) : (
               applications.map(app => (
                 <div key={app.id}>
-                  <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr] items-center gap-3 px-4 py-3 hover:bg-white/[0.04]">
-                    <div className="font-semibold text-white">{app.company}</div>
+                  <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr] items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.02]">
+                    <div className="font-medium text-white truncate">{app.company}</div>
                     <div className="min-w-0 truncate text-sm">
                       {app.link ? (
-                        <a href={app.link} target="_blank" rel="noreferrer" className="text-cyan-200 hover:underline">
+                        <a href={app.link} target="_blank" rel="noreferrer" className="text-glow hover:underline">
                           View Link
                         </a>
-                      ) : <span className="text-white/40">—</span>}
+                      ) : <span className="text-white/20">{"\u2014"}</span>}
                     </div>
-                    <div className="text-sm text-white/80">{app.date_applied || "—"}</div>
+                    <div className="font-data text-white/40">{app.date_applied || "\u2014"}</div>
                     <div className="text-sm">
-                      <span className="inline-block rounded-lg bg-white/10 px-2 py-1 text-xs font-medium text-white/90">
+                      <span className={`inline-block rounded-badge px-2 py-1 text-xs font-medium ${STATUS_STYLE[app.status] ?? "bg-white/[0.04] text-white/50"}`}>
                         {app.status}
                       </span>
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => startEditApp(app)}
-                        className="text-xs font-semibold text-white/70 hover:text-white"
+                        className="text-xs font-medium text-white/35 transition-colors hover:text-white cursor-pointer"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => deleteApplication(app.id)}
-                        className="text-xs font-semibold text-rose-300/70 hover:text-rose-300"
+                        className="text-xs font-medium text-danger/50 transition-colors hover:text-danger cursor-pointer"
                       >
                         Delete
                       </button>
                     </div>
                   </div>
-                  <div className="h-px w-full bg-white/10" />
+                  <div className="h-px w-full bg-white/[0.03]" />
                 </div>
               ))
             )}

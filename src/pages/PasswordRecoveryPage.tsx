@@ -1,4 +1,3 @@
-import Card from "../components/ui/Card";
 import AuthIllustration from "../components/ui/AuthIllustration";
 
 interface PasswordRecoveryPageProps {
@@ -19,42 +18,58 @@ export default function PasswordRecoveryPage({
   inputCls,
 }: PasswordRecoveryPageProps) {
   return (
-    <div className="relative min-h-screen text-white">
+    <div className="relative flex min-h-screen items-center justify-center text-white">
       <AuthIllustration />
-      <div className="relative mx-auto max-w-6xl px-6 py-14">
-        <div className="mx-auto w-full max-w-md">
-          <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-1 shadow-[0_30px_90px_rgba(0,0,0,0.55)] backdrop-blur-xl">
-            <Card title="Set a new password" subtitle="You're in recovery mode. Choose a new password to finish.">
-              <div className="grid gap-3">
-                <input
-                  className={inputCls}
-                  placeholder="New password (min 6 chars)"
-                  type="password"
-                  value={recoveryNewPassword}
-                  onChange={(e) => setRecoveryNewPassword(e.target.value)}
-                />
 
-                <button
-                  onClick={completePasswordRecovery}
-                  disabled={recoverySaving}
-                  className="rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(56,189,248,0.28)] hover:brightness-110 disabled:opacity-50"
-                >
-                  {recoverySaving ? "Saving…" : "Update Password"}
-                </button>
+      <div className="relative z-10 mx-auto w-full max-w-sm px-6">
+        <div className="mb-10 text-center">
+          <h1
+            className="auth-title-enter text-4xl font-semibold tracking-tight"
+            style={{ textShadow: "0 0 40px rgba(0, 229, 255, 0.15)" }}
+          >
+            New password
+          </h1>
+          <p className="auth-subtitle-enter mt-3 text-sm text-white/50">
+            You're in recovery mode. Choose something you'll remember.
+          </p>
+        </div>
 
-                <button
-                  onClick={signOut}
-                  className="rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
-                >
-                  Cancel (Sign Out)
-                </button>
+        <div className="auth-form-enter">
+          <div className="grid gap-3">
+            <input
+              className={inputCls}
+              placeholder="New password (min 6 chars)"
+              type="password"
+              value={recoveryNewPassword}
+              onChange={(e) => setRecoveryNewPassword(e.target.value)}
+            />
 
-                <p className="text-xs text-white/55">
-                  If this doesn't work, confirm your Supabase Auth redirect URLs include your site origin.
-                </p>
-              </div>
-            </Card>
+            <button
+              onClick={completePasswordRecovery}
+              disabled={recoverySaving}
+              className="mt-1 rounded-button bg-glow/90 px-4 py-3 text-sm font-semibold text-depth-0 shadow-[0_0_30px_rgba(0,229,255,0.25)] transition-all duration-300 hover:bg-glow hover:shadow-[0_0_40px_rgba(0,229,255,0.35)] active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+            >
+              {recoverySaving ? "Saving..." : "Update Password"}
+            </button>
+
+            <button
+              onClick={signOut}
+              className="rounded-button border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-medium text-white/70 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer"
+            >
+              Cancel (Sign Out)
+            </button>
+
+            <p className="mt-2 text-xs text-white/30">
+              If this doesn't work, confirm your Supabase Auth redirect URLs
+              include your site origin.
+            </p>
           </div>
+        </div>
+
+        <div className="mt-16 text-center">
+          <span className="whisper-bar text-white/[0.12]">
+            press enter to update
+          </span>
         </div>
       </div>
     </div>

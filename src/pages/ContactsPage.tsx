@@ -55,7 +55,8 @@ export default function ContactsPage({
   inputCls,
 }: ContactsPageProps) {
   return (
-    <div className="mx-auto grid max-w-7xl gap-6 px-6 py-6 lg:grid-cols-3">
+    <div className="mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-3">
+      {/* Add contact — 1/3 */}
       <div className="lg:col-span-1">
         <Card title="Add Contact" subtitle="Add someone once. Track the relationship forever.">
           <div className="grid gap-3">
@@ -72,7 +73,7 @@ export default function ContactsPage({
 
             <button
               onClick={addContact}
-              className="mt-1 rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(56,189,248,0.25)] hover:brightness-110"
+              className="mt-1 rounded-button bg-glow/90 px-4 py-2.5 text-sm font-semibold text-depth-0 shadow-[0_0_24px_rgba(0,229,255,0.2)] transition-all duration-300 hover:bg-glow hover:shadow-[0_0_30px_rgba(0,229,255,0.3)] active:scale-[0.98] cursor-pointer"
             >
               Save Contact
             </button>
@@ -80,112 +81,119 @@ export default function ContactsPage({
         </Card>
       </div>
 
+      {/* Network list — 2/3 */}
       <div className="lg:col-span-2">
         <Card
           title="Your Network"
-          subtitle={loadingContacts ? "Loading…" : `${contacts.length} connection(s)`}
+          subtitle={loadingContacts ? "Loading..." : `${contacts.length} connection${contacts.length !== 1 ? "s" : ""}`}
           right={
             <button
               onClick={loadContacts}
-              className="rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
+              className="rounded-button bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white cursor-pointer"
             >
               Refresh
             </button>
           }
         >
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <input
-              className={inputCls}
-              placeholder="Search name, company, job title, email, phone…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+          <input
+            className={inputCls}
+            placeholder="Search name, company, job title, email, phone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
 
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03]">
-            <div className="grid grid-cols-[2.2fr_1.4fr_1.2fr_1.1fr_1.0fr_1.0fr] items-center gap-3 px-4 py-3 text-xs uppercase tracking-wide text-white/60">
+          <div className="mt-4 rounded-section bg-depth-0/40">
+            <div className="grid grid-cols-[2.2fr_1.4fr_1.2fr_1.1fr_1.0fr_1.0fr] items-center gap-3 px-4 py-3 text-xs uppercase tracking-wider text-white/30 font-medium">
               <div>Name</div>
               <div>Company</div>
-              <div>Job Title</div>
+              <div>Title</div>
               <div>Details</div>
               <div>Edit</div>
               <div>Delete</div>
             </div>
 
-            <div className="h-px w-full bg-white/10" />
+            <div className="h-px w-full bg-white/[0.04]" />
 
             {loadingContacts ? (
-              <div className="px-4 py-4 text-sm text-white/70">Loading…</div>
+              <div className="px-4 py-8 text-center text-sm text-white/40">Loading your network...</div>
             ) : contacts.length === 0 ? (
-              <div className="px-4 py-4 text-sm text-white/70">No connections found.</div>
+              <div className="px-6 py-10 text-center">
+                <p className="text-sm text-white/50">Your network is empty.</p>
+                <p className="mt-1 text-xs text-white/25">
+                  The best time to plant a tree was twenty years ago. The second best time is now.
+                </p>
+              </div>
             ) : (
-              contacts.map((c) => {
-                const displayName = [c.first_name, c.last_name].filter(Boolean).join(" ") || "—";
+              contacts.map((c, i) => {
+                const displayName = [c.first_name, c.last_name].filter(Boolean).join(" ") || "\u2014";
                 const li = c.linkedin_url ?? "";
+                const isRecent = i < 3;
 
                 return (
                   <div key={c.id} className="px-4">
-                    <div className="grid grid-cols-[2.2fr_1.4fr_1.2fr_1.1fr_1.0fr_1.0fr] items-center gap-3 py-3 hover:bg-white/[0.04]">
+                    <div className={`grid grid-cols-[2.2fr_1.4fr_1.2fr_1.1fr_1.0fr_1.0fr] items-center gap-3 py-3 transition-colors hover:bg-white/[0.02] ${isRecent ? "bg-white/[0.01]" : ""}`}>
                       <div className="min-w-0">
                         {li ? (
                           <a
                             href={li}
                             target="_blank"
                             rel="noreferrer"
-                            className="block truncate font-semibold text-white hover:underline"
+                            className="block truncate font-medium text-glow hover:underline"
                             title="Open LinkedIn"
                           >
                             {displayName}
                           </a>
                         ) : (
-                          <div className="truncate font-semibold text-white" title={displayName}>
+                          <div className="truncate font-medium text-white" title={displayName}>
                             {displayName}
                           </div>
                         )}
-                        <div className="mt-0.5 truncate text-xs text-white/60">
-                          {[c.email, c.phone].filter(Boolean).join(" • ")}
+                        <div className="mt-0.5 truncate font-data text-white/30">
+                          {[c.email, c.phone].filter(Boolean).join(" \u2022 ")}
                         </div>
                       </div>
 
-                      <div className="truncate text-sm text-white/85" title={c.company ?? ""}>
-                        {c.company ?? "—"}
+                      <div className="truncate text-sm text-white/50" title={c.company ?? ""}>
+                        {c.company ?? "\u2014"}
                       </div>
 
-                      <div className="truncate text-sm text-white/85" title={c.title ?? ""}>
-                        {c.title ?? "—"}
+                      <div className="truncate text-sm text-white/50" title={c.title ?? ""}>
+                        {c.title ?? "\u2014"}
                       </div>
 
                       <button
                         onClick={() => openDetails(c.id)}
-                        className="w-full rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                        className="w-full rounded-button bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white cursor-pointer"
                       >
                         Details
                       </button>
 
                       <button
                         onClick={() => openEdit(c)}
-                        className="w-full rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                        className="w-full rounded-button bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white cursor-pointer"
                       >
                         Edit
                       </button>
 
                       <button
                         onClick={() => deleteContact(c.id)}
-                        className="w-full rounded-2xl border border-rose-300/20 bg-rose-500/10 px-3 py-2 text-sm font-semibold text-rose-100 hover:bg-rose-500/20"
+                        className="w-full rounded-button bg-danger/[0.06] px-3 py-2 text-sm font-medium text-danger/70 transition-colors hover:bg-danger/10 hover:text-danger cursor-pointer"
                       >
                         Delete
                       </button>
                     </div>
 
-                    <div className="h-px w-full bg-white/10" />
+                    <div className="h-px w-full bg-white/[0.03]" />
                   </div>
                 );
               })
             )}
 
-            <div className="px-4 py-3 text-xs text-white/60">
-              Tip: Click a name to open LinkedIn (if a LinkedIn URL is saved). Use Details to log meetings and notes by date.
-            </div>
+            {contacts.length > 0 && (
+              <div className="px-4 py-3 text-xs text-white/20">
+                Click a name to open LinkedIn. Use Details to log meetings and notes.
+              </div>
+            )}
           </div>
         </Card>
       </div>

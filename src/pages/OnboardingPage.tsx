@@ -21,11 +21,11 @@ const STEPS = [
   "Done",
 ] as const;
 
-const gradientBtn =
-  "rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-500 to-indigo-500 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(56,189,248,0.22)] hover:brightness-110 disabled:opacity-50 transition";
+const primaryBtn =
+  "rounded-button bg-glow/90 px-5 py-2.5 text-sm font-semibold text-depth-0 shadow-[0_0_24px_rgba(0,229,255,0.2)] transition-all hover:bg-glow active:scale-[0.98] disabled:opacity-50 cursor-pointer";
 
 const secondaryBtn =
-  "rounded-2xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition";
+  "rounded-button bg-white/[0.04] px-5 py-2.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white cursor-pointer";
 
 export default function OnboardingPage({
   displayName,
@@ -40,7 +40,6 @@ export default function OnboardingPage({
 }: OnboardingPageProps) {
   const [step, setStep] = useState(0);
 
-  // Local-only fields (not saved to DB yet)
   const [school, setSchool] = useState("");
   const [graduationYear, setGraduationYear] = useState("");
   const [location, setLocation] = useState("");
@@ -65,27 +64,17 @@ export default function OnboardingPage({
         <div key={label} className="flex items-center gap-2">
           <div className="flex flex-col items-center">
             <div
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition ${
+              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${
                 i < step
-                  ? "bg-gradient-to-r from-cyan-300 via-sky-500 to-indigo-500 text-white"
+                  ? "bg-glow/20 text-glow shadow-[0_0_10px_rgba(0,229,255,0.2)]"
                   : i === step
-                    ? "ring-2 ring-sky-500 bg-white/10 text-white"
-                    : "bg-white/[0.06] text-white/40"
+                    ? "ring-2 ring-glow/40 bg-glow/10 text-glow"
+                    : "bg-white/[0.04] text-white/25"
               }`}
             >
               {i < step ? (
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={3}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M5 13l4 4L19 7"
-                  />
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               ) : (
                 i + 1
@@ -93,7 +82,7 @@ export default function OnboardingPage({
             </div>
             <span
               className={`mt-1 hidden text-[10px] sm:block ${
-                i === step ? "text-white/80" : "text-white/40"
+                i === step ? "text-glow/70" : "text-white/20"
               }`}
             >
               {label}
@@ -101,8 +90,8 @@ export default function OnboardingPage({
           </div>
           {i < STEPS.length - 1 && (
             <div
-              className={`h-px w-6 sm:w-10 ${
-                i < step ? "bg-sky-500" : "bg-white/10"
+              className={`h-px w-6 sm:w-10 transition-colors ${
+                i < step ? "bg-glow/30" : "bg-white/[0.06]"
               }`}
             />
           )}
@@ -121,9 +110,9 @@ export default function OnboardingPage({
     subtitle: string;
     children: React.ReactNode;
   }) => (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-6 shadow-[0_10px_35px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+    <div className="rounded-section bg-depth-1/60 p-6">
       <h2 className="text-lg font-semibold text-white">{title}</h2>
-      <p className="mt-1 text-sm text-white/60">{subtitle}</p>
+      <p className="mt-1 text-sm text-white/40">{subtitle}</p>
       <div className="mt-5">{children}</div>
     </div>
   );
@@ -149,7 +138,7 @@ export default function OnboardingPage({
         <div />
       )}
       <button
-        className={gradientBtn}
+        className={primaryBtn}
         disabled={nextDisabled}
         onClick={onNext ?? next}
       >
@@ -159,12 +148,18 @@ export default function OnboardingPage({
   );
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-start bg-[#050b14] px-4 py-10 sm:py-16">
+    <div className="flex min-h-screen flex-col items-center justify-start bg-depth-0 px-4 py-10 sm:py-16">
+      {/* Subtle bg glow */}
+      <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_0%,rgba(0,229,255,0.06),transparent_60%)]" />
+
       <div className="w-full max-w-lg">
-        <h1 className="mb-2 text-center text-2xl font-bold text-white">
+        <h1
+          className="mb-2 text-center text-2xl font-bold text-white"
+          style={{ textShadow: "0 0 30px rgba(0, 229, 255, 0.1)" }}
+        >
           Welcome to Coffee
         </h1>
-        <p className="mb-6 text-center text-sm text-white/60">
+        <p className="mb-6 text-center text-sm text-white/40">
           Let&apos;s get your profile set up in a few quick steps.
         </p>
 
@@ -243,17 +238,13 @@ export default function OnboardingPage({
                 value={myLinkedInUrl}
                 onChange={(e) => setMyLinkedInUrl(e.target.value)}
               />
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="text-sm font-semibold text-white">
-                  Resume upload
-                </div>
-                <div className="mt-1 text-xs text-white/60">
-                  Upload your resume (PDF, DOC, or DOCX).
-                </div>
+              <div className="rounded-input bg-depth-0/30 p-4">
+                <div className="text-sm font-medium text-white">Resume upload</div>
+                <div className="mt-1 text-xs text-white/30">Upload your resume (PDF, DOC, or DOCX).</div>
                 <input
                   type="file"
                   accept=".pdf,.doc,.docx,application/pdf"
-                  className="mt-3 block w-full text-sm text-white/80 file:mr-4 file:rounded-2xl file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-white/15"
+                  className="mt-3 block w-full text-sm text-white/50 file:mr-4 file:cursor-pointer file:rounded-button file:border-0 file:bg-glow/[0.08] file:px-4 file:py-2 file:text-sm file:font-medium file:text-glow hover:file:bg-glow/15"
                   onChange={(e) => {
                     const f = e.target.files?.[0];
                     if (f) uploadResume(f);
@@ -273,42 +264,38 @@ export default function OnboardingPage({
           >
             <div className="grid gap-3">
               <button
-                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-white hover:bg-white/10 transition"
-                onClick={() => {
-                  /* placeholder - not functional yet */
-                }}
+                className="flex items-center gap-3 rounded-input bg-depth-0/30 px-4 py-3 text-left text-sm text-white transition-colors hover:bg-white/[0.04] cursor-pointer"
+                onClick={() => {}}
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-lg">
-                  📅
+                <span className="flex h-9 w-9 items-center justify-center rounded-button bg-glow/[0.08]">
+                  <svg className="h-5 w-5 text-glow/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
                 </span>
                 <div>
-                  <div className="font-semibold">Connect Calendar</div>
-                  <div className="text-xs text-white/50">
-                    Google Calendar, Outlook (coming soon)
-                  </div>
+                  <div className="font-medium">Connect Calendar</div>
+                  <div className="text-xs text-white/30">Google Calendar, Outlook (coming soon)</div>
                 </div>
               </button>
               <button
-                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-white hover:bg-white/10 transition"
-                onClick={() => {
-                  /* placeholder - not functional yet */
-                }}
+                className="flex items-center gap-3 rounded-input bg-depth-0/30 px-4 py-3 text-left text-sm text-white transition-colors hover:bg-white/[0.04] cursor-pointer"
+                onClick={() => {}}
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-lg">
-                  ✉️
+                <span className="flex h-9 w-9 items-center justify-center rounded-button bg-glow/[0.08]">
+                  <svg className="h-5 w-5 text-glow/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
                 </span>
                 <div>
-                  <div className="font-semibold">Connect Email</div>
-                  <div className="text-xs text-white/50">
-                    Gmail, Outlook (coming soon)
-                  </div>
+                  <div className="font-medium">Connect Email</div>
+                  <div className="text-xs text-white/30">Gmail, Outlook (coming soon)</div>
                 </div>
               </button>
             </div>
 
             {skippedIntegrations && (
-              <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
-                <span className="font-semibold">Limited Mode:</span> Without
+              <div className="mt-4 rounded-input bg-glow/[0.04] px-4 py-3 text-xs text-white/40">
+                <span className="font-semibold text-white/50">Limited Mode:</span> Without
                 calendar and email connected, some features like automatic
                 meeting logging won&apos;t be available. You can connect them
                 later in Settings.
@@ -329,7 +316,7 @@ export default function OnboardingPage({
                 >
                   Skip for now
                 </button>
-                <button className={gradientBtn} onClick={next}>
+                <button className={primaryBtn} onClick={next}>
                   Next
                 </button>
               </div>
@@ -344,40 +331,29 @@ export default function OnboardingPage({
             subtitle="Your profile is ready. Start building your network."
           >
             <div className="flex flex-col items-center py-4 text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-cyan-300 via-sky-500 to-indigo-500 text-2xl text-white">
-                <svg
-                  className="h-8 w-8"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M5 13l4 4L19 7"
-                  />
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-glow/15 text-glow shadow-[0_0_20px_rgba(0,229,255,0.2)]">
+                <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <p className="text-sm text-white/70">
-                We&apos;ve saved your info. You can always update it in
-                Settings.
+              <p className="text-sm text-white/40">
+                We&apos;ve saved your info. You can always update it in Settings.
               </p>
 
               {skippedIntegrations && (
-                <div className="mt-4 w-full rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
-                  <span className="font-semibold">Limited Mode:</span>{" "}
+                <div className="mt-4 w-full rounded-input bg-glow/[0.04] px-4 py-3 text-xs text-white/40">
+                  <span className="font-semibold text-white/50">Limited Mode:</span>{" "}
                   Integrations were skipped. Head to Settings any time to
                   connect your calendar and email.
                 </div>
               )}
 
               <button
-                className={`${gradientBtn} mt-6`}
+                className={`${primaryBtn} mt-6`}
                 disabled={savingProfile}
                 onClick={handleFinish}
               >
-                {savingProfile ? "Saving…" : "Go to Network"}
+                {savingProfile ? "Saving..." : "Go to Network"}
               </button>
             </div>
           </StepCard>

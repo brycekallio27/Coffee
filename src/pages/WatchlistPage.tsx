@@ -44,12 +44,12 @@ const STATUS_LABEL: Record<string, string> = Object.fromEntries(
   STATUS_OPTIONS.map((o) => [o.value, o.label]),
 );
 
-const STATUS_BADGE_CLS: Record<string, string> = {
-  not_contacted: "bg-white/10 text-white/90",
-  contacted: "bg-blue-500/20 text-blue-200",
-  scheduled: "bg-purple-500/20 text-purple-200",
-  completed: "bg-green-500/20 text-green-200",
-  follow_up_sent: "bg-cyan-500/20 text-cyan-200",
+const STATUS_STYLE: Record<string, string> = {
+  not_contacted: "bg-white/[0.04] text-white/40",
+  contacted: "bg-glow/[0.06] text-glow/60",
+  scheduled: "bg-glow/[0.08] text-glow/70",
+  completed: "bg-glow/[0.12] text-glow",
+  follow_up_sent: "bg-glow/[0.06] text-glow/60",
 };
 
 export default function WatchlistPage({ inputCls, selectCls }: WatchlistPageProps) {
@@ -197,8 +197,8 @@ export default function WatchlistPage({ inputCls, selectCls }: WatchlistPageProp
 
   /* ── render ────────────────────────────────────────────── */
   return (
-    <div className="mx-auto grid max-w-7xl gap-6 px-6 py-6 lg:grid-cols-3">
-      {/* ── Left column: form ──────────────────────────────── */}
+    <div className="mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-3">
+      {/* Form — 1/3 */}
       <div className="lg:col-span-1">
         <Card
           title={editingId ? "Edit Target" : "Add Target"}
@@ -206,7 +206,7 @@ export default function WatchlistPage({ inputCls, selectCls }: WatchlistPageProp
         >
           <div className="grid gap-3">
             <div>
-              <div className="mb-1 text-xs font-semibold text-white/70">Person Name</div>
+              <div className="mb-1 text-xs font-medium text-white/35">Person Name</div>
               <input
                 className={inputCls}
                 placeholder="e.g. Jane Smith"
@@ -216,7 +216,7 @@ export default function WatchlistPage({ inputCls, selectCls }: WatchlistPageProp
             </div>
 
             <div>
-              <div className="mb-1 text-xs font-semibold text-white/70">Company</div>
+              <div className="mb-1 text-xs font-medium text-white/35">Company</div>
               <input
                 className={inputCls}
                 placeholder="e.g. Acme Corp"
@@ -226,7 +226,7 @@ export default function WatchlistPage({ inputCls, selectCls }: WatchlistPageProp
             </div>
 
             <div>
-              <div className="mb-1 text-xs font-semibold text-white/70">Role / Title (optional)</div>
+              <div className="mb-1 text-xs font-medium text-white/35">Role / Title (optional)</div>
               <input
                 className={inputCls}
                 placeholder="e.g. Engineering Manager"
@@ -237,7 +237,7 @@ export default function WatchlistPage({ inputCls, selectCls }: WatchlistPageProp
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <div className="mb-1 text-xs font-semibold text-white/70">Status</div>
+                <div className="mb-1 text-xs font-medium text-white/35">Status</div>
                 <select
                   className={selectCls}
                   value={status}
@@ -251,7 +251,7 @@ export default function WatchlistPage({ inputCls, selectCls }: WatchlistPageProp
                 </select>
               </div>
               <div>
-                <div className="mb-1 text-xs font-semibold text-white/70">Next Action Date</div>
+                <div className="mb-1 text-xs font-medium text-white/35">Next Action Date</div>
                 <input
                   className={inputCls}
                   type="date"
@@ -262,7 +262,7 @@ export default function WatchlistPage({ inputCls, selectCls }: WatchlistPageProp
             </div>
 
             <div>
-              <div className="mb-1 text-xs font-semibold text-white/70">Notes (optional)</div>
+              <div className="mb-1 text-xs font-medium text-white/35">Notes (optional)</div>
               <textarea
                 className={inputCls + " min-h-[72px] resize-y"}
                 placeholder="Any context, talking points, etc."
@@ -275,14 +275,14 @@ export default function WatchlistPage({ inputCls, selectCls }: WatchlistPageProp
               <button
                 onClick={editingId ? updateTarget : addTarget}
                 disabled={saving}
-                className="w-full rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(56,189,248,0.25)] hover:brightness-110 disabled:opacity-50"
+                className="w-full rounded-button bg-glow/90 px-4 py-2.5 text-sm font-semibold text-depth-0 shadow-[0_0_24px_rgba(0,229,255,0.2)] transition-all duration-300 hover:bg-glow active:scale-[0.98] disabled:opacity-50 cursor-pointer"
               >
                 {saving ? "Saving..." : editingId ? "Update" : "Add Target"}
               </button>
               {editingId && (
                 <button
                   onClick={cancelEdit}
-                  className="rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                  className="rounded-button bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.08] cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -292,22 +292,22 @@ export default function WatchlistPage({ inputCls, selectCls }: WatchlistPageProp
         </Card>
       </div>
 
-      {/* ── Right column: target list ─────────────────────── */}
+      {/* List — 2/3 */}
       <div className="lg:col-span-2">
         <Card
           title="Watchlist"
-          subtitle={loading ? "Loading..." : `${targets.length} target(s)`}
+          subtitle={loading ? "Loading..." : `${targets.length} target${targets.length !== 1 ? "s" : ""}`}
           right={
             <button
               onClick={loadTargets}
-              className="rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
+              className="rounded-button bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white cursor-pointer"
             >
               Refresh
             </button>
           }
         >
-          <div className="mt-2 rounded-2xl border border-white/10 bg-white/[0.03]">
-            <div className="grid grid-cols-[1.4fr_1.2fr_1fr_1fr_1fr_0.8fr] items-center gap-3 px-4 py-3 text-xs uppercase tracking-wide text-white/60">
+          <div className="mt-2 rounded-section bg-depth-0/40">
+            <div className="grid grid-cols-[1.4fr_1.2fr_1fr_1fr_1fr_0.8fr] items-center gap-3 px-4 py-3 text-xs uppercase tracking-wider text-white/30 font-medium">
               <div>Name</div>
               <div>Company</div>
               <div>Role</div>
@@ -315,51 +315,56 @@ export default function WatchlistPage({ inputCls, selectCls }: WatchlistPageProp
               <div>Next Action</div>
               <div>Actions</div>
             </div>
-            <div className="h-px w-full bg-white/10" />
+            <div className="h-px w-full bg-white/[0.04]" />
 
             {loading ? (
-              <div className="px-4 py-4 text-sm text-white/70">Loading...</div>
+              <div className="px-4 py-8 text-center text-sm text-white/40">Loading watchlist...</div>
             ) : targets.length === 0 ? (
-              <div className="px-4 py-4 text-sm text-white/70">No watchlist targets yet.</div>
+              <div className="px-6 py-10 text-center">
+                <p className="text-sm text-white/50">No one on your radar yet.</p>
+                <p className="mt-1 text-xs text-white/25">
+                  Opportunity doesn't knock. It networks.
+                </p>
+              </div>
             ) : (
               targets.map((t) => (
                 <div key={t.id}>
-                  <div className="grid grid-cols-[1.4fr_1.2fr_1fr_1fr_1fr_0.8fr] items-center gap-3 px-4 py-3 hover:bg-white/[0.04]">
-                    <div className="truncate font-semibold text-white" title={t.person_name}>
+                  <div className="grid grid-cols-[1.4fr_1.2fr_1fr_1fr_1fr_0.8fr] items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.02]">
+                    <div className="truncate font-medium text-white" title={t.person_name}>
                       {t.person_name}
                     </div>
-                    <div className="truncate text-sm text-white/85" title={t.company}>
+                    <div className="truncate text-sm text-white/50" title={t.company}>
                       {t.company}
                     </div>
-                    <div className="truncate text-sm text-white/85" title={t.role ?? ""}>
-                      {t.role ?? "—"}
+                    <div className="truncate text-sm text-white/50" title={t.role ?? ""}>
+                      {t.role ?? "\u2014"}
                     </div>
                     <div className="text-sm">
                       <span
-                        className={`inline-block rounded-lg px-2 py-1 text-xs font-medium ${STATUS_BADGE_CLS[t.status] ?? "bg-white/10 text-white/90"}`}
+                        className={`inline-block rounded-badge px-2 py-1 text-xs font-medium ${STATUS_STYLE[t.status] ?? "bg-white/[0.04] text-white/40"}`}
                       >
                         {STATUS_LABEL[t.status] ?? t.status}
                       </span>
                     </div>
-                    <div className="text-sm text-white/80">
-                      {t.next_action_date ?? "—"}
+                    <div className="font-data text-sm text-white/40">
+                      {t.next_action_date ?? "\u2014"}
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => startEdit(t)}
-                        className="text-xs font-semibold text-white/70 hover:text-white"
+                        className="text-xs font-medium text-white/35 transition-colors hover:text-white cursor-pointer"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => deleteTarget(t.id)}
-                        className="text-xs font-semibold text-rose-300/70 hover:text-rose-300"
+                        className="text-xs font-medium text-danger/50 transition-colors hover:text-danger cursor-pointer"
                       >
                         Delete
                       </button>
                     </div>
                   </div>
-                  <div className="h-px w-full bg-white/10" />
+                  <div className="h-px w-full bg-white/[0.03]" />
                 </div>
               ))
             )}

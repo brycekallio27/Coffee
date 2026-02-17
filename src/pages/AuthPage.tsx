@@ -1,4 +1,3 @@
-import Card from "../components/ui/Card";
 import AuthIllustration from "../components/ui/AuthIllustration";
 
 interface AuthPageProps {
@@ -29,95 +28,81 @@ export default function AuthPage({
   inputCls,
 }: AuthPageProps) {
   return (
-    <div className="relative min-h-screen text-white">
+    <div className="relative flex min-h-screen items-center justify-center text-white">
       <AuthIllustration />
 
-      <div className="relative mx-auto max-w-6xl px-6 py-14">
-        <div className="grid items-center gap-10 lg:grid-cols-2">
-          <div className="hidden lg:block">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/80">
-              <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_20px_rgba(34,211,238,0.8)]" />
-              Coffee?
-            </div>
+      <div className="relative z-10 mx-auto w-full max-w-sm px-6">
+        {/* Environmental branding */}
+        <div className="mb-10 text-center">
+          <h1
+            className="auth-title-enter text-5xl font-semibold tracking-tight"
+            style={{ textShadow: "0 0 40px rgba(0, 229, 255, 0.15)" }}
+          >
+            Coffee?
+          </h1>
+          <p className="auth-subtitle-enter mt-3 text-sm text-white/50">
+            Your network is waiting. Sign in to pick up where you left off.
+          </p>
+        </div>
 
-            <h1 className="mt-5 text-4xl font-semibold tracking-tight">Turn networking into a repeatable system.</h1>
-            <p className="mt-3 max-w-lg text-sm text-white/70">
-              Track your network, log coffee chats by date, and keep your relationship context where it belongs—next to
-              the person.
-            </p>
+        {/* Form — no card, no borders, floats in space */}
+        <div className="auth-form-enter">
+          <div className="grid gap-3">
+            <input
+              className={inputCls}
+              placeholder="Email"
+              value={authEmail}
+              onChange={(e) => {
+                setAuthEmail(e.target.value);
+                if (resetSent) setResetSent(false);
+              }}
+            />
+            <input
+              className={inputCls}
+              placeholder="Password"
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (resetSent) setResetSent(false);
+              }}
+            />
+
+            <button
+              onClick={signIn}
+              className="mt-1 rounded-button bg-glow/90 px-4 py-3 text-sm font-semibold text-depth-0 shadow-[0_0_30px_rgba(0,229,255,0.25)] transition-all duration-300 hover:bg-glow hover:shadow-[0_0_40px_rgba(0,229,255,0.35)] active:scale-[0.98] cursor-pointer"
+            >
+              Sign In
+            </button>
+
+            <button
+              onClick={signUp}
+              className="rounded-button border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-medium text-white/70 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer"
+            >
+              Sign Up
+            </button>
           </div>
 
-          <div className="mx-auto w-full max-w-md">
-            <div className="mb-8 text-center lg:hidden">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/80">
-                <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_20px_rgba(34,211,238,0.8)]" />
-                Coffee?
-              </div>
-              <h1 className="mt-5 text-3xl font-semibold tracking-tight">Coffee?</h1>
-              <p className="mt-2 text-sm text-white/70">A colorful networking dashboard that actually gets used.</p>
-            </div>
+          <div className="mt-4 flex items-center justify-between">
+            <button
+              onClick={requestPasswordReset}
+              disabled={resettingPw}
+              className="text-xs font-medium text-white/35 transition-colors hover:text-glow disabled:opacity-50 cursor-pointer"
+            >
+              {resettingPw ? "Sending..." : "Forgot password"}
+            </button>
 
-            <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-1 shadow-[0_30px_90px_rgba(0,0,0,0.55)] backdrop-blur-xl">
-              <Card title="Sign in" subtitle="Use any email + password you control.">
-                <div className="grid gap-3">
-                  <input
-                    className={inputCls}
-                    placeholder="Email"
-                    value={authEmail}
-                    onChange={(e) => {
-                      setAuthEmail(e.target.value);
-                      if (resetSent) setResetSent(false);
-                    }}
-                  />
-                  <input
-                    className={inputCls}
-                    placeholder="Password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (resetSent) setResetSent(false);
-                    }}
-                  />
-
-                  <button
-                    onClick={signIn}
-                    className="rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(56,189,248,0.28)] hover:brightness-110"
-                  >
-                    Sign In
-                  </button>
-
-                  <button
-                    onClick={signUp}
-                    className="rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
-                  >
-                    Sign Up
-                  </button>
-
-                  <div className="flex items-center justify-between pt-1">
-                    <button
-                      onClick={requestPasswordReset}
-                      disabled={resettingPw}
-                      className="text-left text-xs font-semibold text-cyan-200 hover:underline disabled:opacity-60"
-                    >
-                      {resettingPw ? "Sending reset email…" : "Forgot my password"}
-                    </button>
-
-                    {resetSent ? <span className="text-xs text-white/60">Reset email sent.</span> : null}
-                  </div>
-
-                  <p className="text-xs text-white/55">
-                    Note: If you don't receive the email, check spam. Also ensure Supabase Auth redirect URLs include
-                    this site.
-                  </p>
-                </div>
-              </Card>
-            </div>
-
-            <p className="mt-4 text-center text-xs text-white/55">
-              By signing in, you'll land directly in your Network dashboard.
-            </p>
+            {resetSent ? (
+              <span className="text-xs text-glow/60">Check your inbox.</span>
+            ) : null}
           </div>
+        </div>
+
+        {/* Keyboard hint */}
+        <div className="mt-16 text-center">
+          <span className="whisper-bar text-white/[0.12]">
+            press enter to sign in
+          </span>
         </div>
       </div>
     </div>
