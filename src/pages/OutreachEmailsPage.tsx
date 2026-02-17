@@ -23,9 +23,15 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
-import type { Contact, Profile, ScheduledOutreach } from "../types";
+import type { Contact, Profile, ScheduledOutreach, WatchlistTarget } from "../types";
 import Card from "../components/ui/Card";
 import { toast } from "sonner";
+import {
+  checkOllamaAvailable,
+  getOllamaModels,
+  fetchLinkedInPreview,
+  personalizeOutreachWithOllama,
+} from "../lib/resumeUtils";
 
 interface OutreachEmailsPageProps {
   contacts: Contact[];
@@ -139,8 +145,21 @@ export default function OutreachEmailsPage({
   /* ── templates toggle ───────────────────────────────── */
   const [showTemplates, setShowTemplates] = useState(false);
 
-  const selectedContact =
-    contacts.find((c) => c.id === selectedContactId) ?? null;
+  /* ── AI personalization ─────────────────────────────── */
+  const [personalizing, setPersonalizing] = useState(false);
+  const [ollamaAvailable, setOllamaAvailable] = useState(false);
+  const [ollamaModels, setOllamaModels] = useState<string[]>([]);
+
+  /* ── watchlist targets ─────────────────────────────── */
+  const [watchlistTargets, setWatchlistTargets] = useState<WatchlistTarget[]>([]);
+
+  const isWatchlistSelection = selectedContactId.startsWith("w:");
+  const selectedContact = isWatchlistSelection
+    ? null
+    : contacts.find((c) => c.id === selectedContactId) ?? null;
+  const selectedWatchlistTarget = isWatchlistSelection
+    ? watchlistTargets.find((t) => t.id === selectedContactId.slice(2)) ?? null
+    : null;
 
   /* ── helpers ────────────────────────────────────────── */
 
@@ -153,16 +172,20 @@ export default function OutreachEmailsPage({
   const contactNameById = (id: string | null) => {
     if (!id) return "Unknown";
     const c = contacts.find((x) => x.id === id);
-    if (!c) return "Unknown";
-    return [c.first_name, c.last_name].filter(Boolean).join(" ") || "Unnamed";
+    if (c) return [c.first_name, c.last_name].filter(Boolean).join(" ") || "Unnamed";
+    const t = watchlistTargets.find((x) => x.id === id);
+    if (t) return t.person_name;
+    return "Unknown";
   };
 
   const resolvePlaceholders = (text: string) => {
-    const name =
-      [selectedContact?.first_name, selectedContact?.last_name]
-        .filter(Boolean)
-        .join(" ") || "{name}";
-    const company = selectedContact?.company || "{company}";
+    const name = selectedWatchlistTarget
+      ? selectedWatchlistTarget.person_name
+      : [selectedContact?.first_name, selectedContact?.last_name]
+          .filter(Boolean)
+          .join(" ") || "{name}";
+    const company =
+      selectedWatchlistTarget?.company || selectedContact?.company || "{company}";
     const background = profile?.resume_text
       ? profile.resume_text.slice(0, 200).trim()
       : "{background}";
@@ -240,7 +263,7 @@ export default function OutreachEmailsPage({
 
     const payload = {
       owner_id: user.id,
-      contact_id: selectedContactId || null,
+      contact_id: isWatchlistSelection ? null : selectedContactId || null,
       channel,
       subject: channel === "email" ? subject.trim() || null : null,
       message: message.trim(),
@@ -330,11 +353,94 @@ export default function OutreachEmailsPage({
     await markStatus(item.id, "sent");
   };
 
+  const loadWatchlistTargets = useCallback(async () => {
+    const { data } = await supabase
+      .from("watchlist_targets")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (data) setWatchlistTargets(data as WatchlistTarget[]);
+  }, []);
+
   /* ── load on mount ──────────────────────────────────── */
 
   useEffect(() => {
     loadItems();
-  }, [loadItems]);
+    loadWatchlistTargets();
+    checkOllamaAvailable().then((ok) => {
+      setOllamaAvailable(ok);
+      if (ok) getOllamaModels().then(setOllamaModels);
+    });
+  }, [loadItems, loadWatchlistTargets]);
+
+  async function handlePersonalize() {
+    if (!message.trim()) {
+      toast.error("Write or apply a template message first.");
+      return;
+    }
+    if (!ollamaAvailable) {
+      toast.error("Ollama is not running. Start it with: ollama serve");
+      return;
+    }
+    const model = ollamaModels[0];
+    if (!model) {
+      toast.error("No Ollama model found. Run: ollama pull llama3.2");
+      return;
+    }
+
+    setPersonalizing(true);
+    try {
+      // Build contact info string
+      let contactInfo = "";
+      if (selectedContact) {
+        const name = [selectedContact.first_name, selectedContact.last_name]
+          .filter(Boolean)
+          .join(" ");
+        contactInfo = [
+          name && `Name: ${name}`,
+          selectedContact.company && `Company: ${selectedContact.company}`,
+          selectedContact.title && `Title: ${selectedContact.title}`,
+        ]
+          .filter(Boolean)
+          .join("\n");
+      } else if (selectedWatchlistTarget) {
+        contactInfo = [
+          `Name: ${selectedWatchlistTarget.person_name}`,
+          `Company: ${selectedWatchlistTarget.company}`,
+          selectedWatchlistTarget.role && `Role: ${selectedWatchlistTarget.role}`,
+        ]
+          .filter(Boolean)
+          .join("\n");
+      }
+
+      // Try to fetch LinkedIn preview
+      const linkedInUrl =
+        selectedContact?.linkedin_url || null;
+      let linkedInPreview: string | null = null;
+      if (linkedInUrl) {
+        linkedInPreview = await fetchLinkedInPreview(linkedInUrl);
+      }
+
+      const result = await personalizeOutreachWithOllama(
+        profile?.resume_text ?? null,
+        contactInfo || "No contact selected",
+        linkedInPreview,
+        message,
+        model
+      );
+      setMessage(result);
+      if (linkedInPreview) {
+        toast.success("Message personalized using your resume and their LinkedIn profile.");
+      } else if (linkedInUrl) {
+        toast.success("Message personalized. LinkedIn preview couldn't be fetched — used contact info instead.");
+      } else {
+        toast.success("Message personalized using your resume and contact info.");
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Personalization failed.");
+    } finally {
+      setPersonalizing(false);
+    }
+  }
 
   /* ── derived ────────────────────────────────────────── */
 
@@ -383,11 +489,24 @@ export default function OutreachEmailsPage({
                 onChange={(e) => setSelectedContactId(e.target.value)}
               >
                 <option value="">Select a contact...</option>
-                {contacts.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {contactDisplayName(c)}
-                  </option>
-                ))}
+                {contacts.length > 0 && (
+                  <optgroup label="Network">
+                    {contacts.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {contactDisplayName(c)}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {watchlistTargets.length > 0 && (
+                  <optgroup label="Watchlist">
+                    {watchlistTargets.map((t) => (
+                      <option key={`w:${t.id}`} value={`w:${t.id}`}>
+                        {t.person_name}{t.company ? ` \u2014 ${t.company}` : ""}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </div>
 
@@ -448,7 +567,21 @@ export default function OutreachEmailsPage({
 
             {/* Message */}
             <div>
-              <div className="mb-1 text-xs font-medium text-white/35">Message</div>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-xs font-medium text-white/35">Message</span>
+                {ollamaAvailable && (
+                  <button
+                    onClick={handlePersonalize}
+                    disabled={personalizing || !message.trim()}
+                    className="flex items-center gap-1.5 rounded-button bg-glow/[0.08] px-2.5 py-1 text-xs font-medium text-glow transition-colors hover:bg-glow/15 disabled:opacity-40 cursor-pointer"
+                  >
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                    </svg>
+                    {personalizing ? "Personalizing..." : "AI Personalize"}
+                  </button>
+                )}
+              </div>
               <textarea
                 className={inputCls + " min-h-[140px] resize-y"}
                 placeholder="Write your message here..."
