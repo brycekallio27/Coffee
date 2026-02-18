@@ -29,6 +29,8 @@ export type Profile = {
   resume_url: string | null;
   avatar_url: string | null;
   resume_text: string | null;
+  phone: string | null;
+  career_interests: string | null;
 };
 
 export type Application = {

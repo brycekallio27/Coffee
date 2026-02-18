@@ -13,6 +13,10 @@ interface SettingsPageProps {
   setDisplayName: (v: string) => void;
   myLinkedInUrl: string;
   setMyLinkedInUrl: (v: string) => void;
+  userPhone: string;
+  setUserPhone: (v: string) => void;
+  userCareerInterests: string;
+  setUserCareerInterests: (v: string) => void;
   newEmail: string;
   setNewEmail: (v: string) => void;
   newPassword: string;
@@ -37,6 +41,10 @@ export default function SettingsPage({
   setDisplayName,
   myLinkedInUrl,
   setMyLinkedInUrl,
+  userPhone,
+  setUserPhone,
+  userCareerInterests,
+  setUserCareerInterests,
   newEmail,
   setNewEmail,
   newPassword,
@@ -127,6 +135,15 @@ export default function SettingsPage({
               <input className={inputCls} placeholder="Display name (username)" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
 
               <input className={inputCls} placeholder="Your LinkedIn URL" value={myLinkedInUrl} onChange={(e) => setMyLinkedInUrl(e.target.value)} />
+
+              <input className={inputCls} placeholder="Phone number" value={userPhone} onChange={(e) => setUserPhone(e.target.value)} />
+
+              <textarea
+                className={`${inputCls} min-h-[80px] resize-y`}
+                placeholder="Career interests (e.g. Product Management, UX Design...)"
+                value={userCareerInterests}
+                onChange={(e) => setUserCareerInterests(e.target.value)}
+              />
 
               <div className="rounded-input bg-depth-0/30 p-4">
                 <div className="text-sm font-medium text-white">Resume upload</div>

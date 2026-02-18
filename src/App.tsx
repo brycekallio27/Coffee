@@ -110,6 +110,13 @@ export default function App() {
   const [authEmail, setAuthEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // Sign-up extra fields
+  const [signupName, setSignupName] = useState("");
+  const [signupPhone, setSignupPhone] = useState("");
+  const [signupLinkedIn, setSignupLinkedIn] = useState("");
+  const [signupCareerInterests, setSignupCareerInterests] = useState("");
+  const [signupResumeFile, setSignupResumeFile] = useState<File | null>(null);
+
   const [page, setPage] = useState<Page>("contacts");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [networkDropdownOpen, setNetworkDropdownOpen] = useState(false);
@@ -121,6 +128,8 @@ export default function App() {
 
   const [displayName, setDisplayName] = useState("");
   const [myLinkedInUrl, setMyLinkedInUrl] = useState("");
+  const [userPhone, setUserPhone] = useState("");
+  const [userCareerInterests, setUserCareerInterests] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
@@ -214,9 +223,21 @@ export default function App() {
   }, []);
 
   async function signUp() {
+    if (!signupName.trim()) { toast.error("Full name is required."); return; }
+    if (!signupPhone.trim()) { toast.error("Phone number is required."); return; }
+    if (!signupLinkedIn.trim()) { toast.error("LinkedIn URL is required."); return; }
+
     const { error } = await supabase.auth.signUp({ email: authEmail, password });
     if (error) { toast.error(error.message); return; }
-    else toast.success("Signed up. If email confirmation is enabled, confirm your email, then sign in.");
+
+    localStorage.setItem("coffee_pending_signup", JSON.stringify({
+      full_name: signupName.trim(),
+      phone: signupPhone.trim(),
+      my_linkedin_url: signupLinkedIn.trim(),
+      career_interests: signupCareerInterests.trim() || null,
+    }));
+
+    toast.success("Signed up. If email confirmation is enabled, confirm your email, then sign in.");
   }
 
   async function signIn() {
@@ -299,7 +320,7 @@ export default function App() {
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, my_linkedin_url, resume_url, avatar_url, resume_text")
+      .select("id, full_name, my_linkedin_url, resume_url, avatar_url, resume_text, phone, career_interests")
       .eq("id", session.user.id)
       .maybeSingle();
 
@@ -309,29 +330,63 @@ export default function App() {
     }
 
     if (!data) {
-      const { error: insErr } = await supabase.from("profiles").insert({
+      // Check for pending sign-up data from localStorage
+      let pending: { full_name?: string; phone?: string; my_linkedin_url?: string; career_interests?: string | null } | null = null;
+      try {
+        const raw = localStorage.getItem("coffee_pending_signup");
+        if (raw) pending = JSON.parse(raw);
+      } catch { /* ignore */ }
+
+      const insertPayload: Record<string, any> = {
         id: session.user.id,
-        full_name: null,
-        my_linkedin_url: null,
+        full_name: pending?.full_name || null,
+        my_linkedin_url: pending?.my_linkedin_url || null,
+        phone: pending?.phone || null,
+        career_interests: pending?.career_interests || null,
         resume_url: null,
         avatar_url: null,
-      });
+      };
+
+      const { error: insErr } = await supabase.from("profiles").insert(insertPayload);
       if (insErr) console.error(insErr);
-      setProfile({
+
+      const newProfile: Profile = {
         id: session.user.id,
-        full_name: null,
-        my_linkedin_url: null,
+        full_name: pending?.full_name || null,
+        my_linkedin_url: pending?.my_linkedin_url || null,
+        phone: pending?.phone || null,
+        career_interests: pending?.career_interests || null,
         resume_url: null,
         avatar_url: null,
         resume_text: null,
-      });
-      setPage("onboarding");
+      };
+      setProfile(newProfile);
+      setDisplayName(newProfile.full_name ?? "");
+      setMyLinkedInUrl(newProfile.my_linkedin_url ?? "");
+      setUserPhone(newProfile.phone ?? "");
+      setUserCareerInterests(newProfile.career_interests ?? "");
+      setNewEmail(session?.user?.email ?? "");
+
+      // Upload resume if pending
+      if (signupResumeFile) {
+        await uploadResume(signupResumeFile);
+        setSignupResumeFile(null);
+      }
+
+      localStorage.removeItem("coffee_pending_signup");
+
+      // Skip onboarding if name was provided via sign-up
+      if (!pending?.full_name?.trim()) {
+        setPage("onboarding");
+      }
       return;
     }
 
     setProfile(data as Profile);
     setDisplayName((data as any)?.full_name ?? "");
     setMyLinkedInUrl((data as any)?.my_linkedin_url ?? "");
+    setUserPhone((data as any)?.phone ?? "");
+    setUserCareerInterests((data as any)?.career_interests ?? "");
     setNewEmail(session?.user?.email ?? "");
 
     if (!(data as any)?.full_name?.trim()) {
@@ -367,6 +422,8 @@ export default function App() {
         .update({
           full_name: displayName || null,
           my_linkedin_url: myLinkedInUrl || null,
+          phone: userPhone || null,
+          career_interests: userCareerInterests || null,
         })
         .eq("id", session.user.id);
 
@@ -952,6 +1009,16 @@ export default function App() {
         signUp={signUp}
         requestPasswordReset={requestPasswordReset}
         inputCls={inputCls}
+        signupName={signupName}
+        setSignupName={setSignupName}
+        signupPhone={signupPhone}
+        setSignupPhone={setSignupPhone}
+        signupLinkedIn={signupLinkedIn}
+        setSignupLinkedIn={setSignupLinkedIn}
+        signupCareerInterests={signupCareerInterests}
+        setSignupCareerInterests={setSignupCareerInterests}
+        signupResumeFile={signupResumeFile}
+        setSignupResumeFile={setSignupResumeFile}
       />
     );
   }
@@ -1261,6 +1328,10 @@ export default function App() {
             setDisplayName={setDisplayName}
             myLinkedInUrl={myLinkedInUrl}
             setMyLinkedInUrl={setMyLinkedInUrl}
+            userPhone={userPhone}
+            setUserPhone={setUserPhone}
+            userCareerInterests={userCareerInterests}
+            setUserCareerInterests={setUserCareerInterests}
             newEmail={newEmail}
             setNewEmail={setNewEmail}
             newPassword={newPassword}
