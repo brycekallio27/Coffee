@@ -26,6 +26,7 @@ import { supabase } from "../lib/supabase";
 import type { Contact, Profile, ScheduledOutreach, WatchlistTarget } from "../types";
 import Card from "../components/ui/Card";
 import { toast } from "sonner";
+import { ensureUrl } from "../lib/utils";
 import {
   checkOllamaAvailable,
   getOllamaModels,
@@ -113,7 +114,7 @@ function openOutreach(
     const contactName = [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || "contact";
     toast.success(`Message copied! Opening ${contactName}'s profile \u2014 click Message and paste.`);
     if (contact?.linkedin_url) {
-      window.open(contact.linkedin_url, "_blank");
+      window.open(ensureUrl(contact.linkedin_url), "_blank");
     } else {
       toast.error("No LinkedIn URL for this contact. Opening LinkedIn messaging.");
       window.open("https://www.linkedin.com/messaging/", "_blank");

@@ -13,6 +13,11 @@ export function todayISODate(): string {
   return `${y}-${m}-${day}`;
 }
 
+export function ensureUrl(url: string): string {
+  if (/^https?:\/\//i.test(url)) return url;
+  return `https://${url}`;
+}
+
 export function formatDateLabel(iso: string): string {
   const [y, m, d] = iso.split("-").map((x) => parseInt(x, 10));
   if (!y || !m || !d) return iso;

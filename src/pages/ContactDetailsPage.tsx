@@ -1,5 +1,6 @@
 import Card from "../components/ui/Card";
 import type { Contact, ContactMeeting } from "../types";
+import { ensureUrl } from "../lib/utils";
 
 interface ContactDetailsPageProps {
   selectedContact: Contact | null;
@@ -115,7 +116,7 @@ export default function ContactDetailsPage({
                       {selectedContact.linkedin_url ? (
                         <a
                           className="text-sm font-medium text-glow hover:underline"
-                          href={selectedContact.linkedin_url}
+                          href={ensureUrl(selectedContact.linkedin_url)}
                           target="_blank"
                           rel="noreferrer"
                         >

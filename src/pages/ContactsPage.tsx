@@ -1,5 +1,6 @@
 import Card from "../components/ui/Card";
 import type { Contact } from "../types";
+import { ensureUrl } from "../lib/utils";
 
 interface ContactsPageProps {
   contacts: Contact[];
@@ -135,7 +136,7 @@ export default function ContactsPage({
                       <div className="min-w-0">
                         {li ? (
                           <a
-                            href={li}
+                            href={ensureUrl(li)}
                             target="_blank"
                             rel="noreferrer"
                             className="block truncate font-medium text-glow hover:underline"
