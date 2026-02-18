@@ -1,5 +1,6 @@
 import { useState } from "react";
 import AuthIllustration from "../components/ui/AuthIllustration";
+import Logo from "../components/ui/Logo";
 
 interface AuthPageProps {
   authEmail: string;
@@ -62,18 +63,10 @@ export default function AuthPage({
 
       <div className="relative z-10 mx-auto w-full max-w-sm px-6">
         {/* Environmental branding */}
-        <div className="mb-10 text-center">
-          <h1
-            className="auth-title-enter text-5xl font-semibold tracking-tight"
-            style={{ textShadow: "0 0 40px rgba(0, 229, 255, 0.15)" }}
-          >
-            Coffee?
-          </h1>
-          <p className="auth-subtitle-enter mt-3 text-sm text-white/50">
-            {mode === "signin"
-              ? "Your network is waiting. Sign in to pick up where you left off."
-              : "Create your account and start building your network."}
-          </p>
+        <div className="mb-10 flex justify-center">
+          <div className="auth-title-enter">
+            <Logo size="lg" />
+          </div>
         </div>
 
         {/* Mode toggle tabs */}
@@ -212,14 +205,6 @@ export default function AuthPage({
           </div>
         </div>
 
-        {/* Keyboard hint */}
-        {mode === "signin" && (
-          <div className="mt-16 text-center">
-            <span className="whisper-bar text-white/[0.12]">
-              press enter to sign in
-            </span>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -66,7 +66,7 @@ src/
 - **Contact** — first_name, last_name, company, title, email, phone, linkedin_url, status
 - **ContactMeeting** — contact_id, meeting_date, title, notes
 - **Application** — company, link, date_applied, status, optional contact_id FK
-- **Profile** — full_name, my_linkedin_url, resume_url, avatar_url
+- **Profile** — full_name, my_linkedin_url, resume_url, avatar_url, resume_text, phone, career_interests
 - **WatchlistTarget** — person_name, company, role, status, next_action_date, notes
 - **ScheduledOutreach** — contact_id (FK), channel (sms/linkedin/email), subject, message, scheduled_at, status (scheduled/sent/skipped)
 
@@ -125,29 +125,9 @@ Notable architectural decisions:
 - D-011: Contact-centric data model
 - D-014: Outreach emails are AI draft + copy-to-clipboard (MVP)
 
+## Completed Features
+
+- **Resume Adjuster** — Paste a job description, get AI-powered keyword suggestions via Ollama (lives in SettingsPage). Resume text parsed from PDF and stored in `profiles.resume_text`.
+- **Sign In / Sign Up Flow Separation** — Auth page has tab-based mode toggle. Sign-up collects name, phone, LinkedIn, career interests, and optional resume upfront. Pending data stored in `localStorage` key `coffee_pending_signup`, applied on first profile load, skipping onboarding when name is provided. Prerequisites: `profiles.phone` and `profiles.career_interests` columns.
+
 ## Planned Features
-
-### Resume Adjuster (Settings tab)
-
-**Goal:** Students paste a job description from a career site, and an AI model reads their stored resume + the job description, then outputs an adjusted resume with better-aligned keywords, action verbs, and phrasing.
-
-**Resume persistence:**
-- The user's uploaded resume (already in Supabase Storage bucket `resumes`) should persist across sessions — loaded automatically on login, not re-uploaded each time.
-- The `profiles.resume_url` field already stores the public URL. The resume content (parsed text) should also be stored so AI can reference it without re-downloading/parsing each time.
-- Users can replace their resume at any time via Settings; the stored text updates accordingly.
-
-**Resume Adjuster workflow (lives in SettingsPage):**
-1. Student pastes a job description into a text area.
-2. AI reads the student's current resume text + the job description.
-3. AI identifies action verbs, phrases, and keywords in the resume that could be swapped or enhanced to better match the job description.
-4. Output: an adjusted resume (displayed as text or downloadable) with changes highlighted or listed.
-
-**Resume-powered outreach personalization:**
-- The parsed resume text should be accessible to OutreachEmailsPage so outreach templates can be enriched with personal details (skills, interests, activities) pulled from the resume.
-- When composing outreach, the system should try to find alignment between the student's resume (interests, activities, experience) and the contact/company they're reaching out to.
-
-**Technical notes:**
-- AI model integration TBD (could be OpenAI, Anthropic, or Supabase Edge Function calling an LLM).
-- Resume parsing: PDF text extraction needed (client-side via pdf.js or server-side via Edge Function).
-- Store parsed resume text in a new `profiles` column (e.g. `resume_text text`) or a separate table.
-- The adjuster is a tool, not a rewrite — it suggests targeted swaps, not a full resume rewrite.

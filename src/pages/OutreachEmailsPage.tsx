@@ -25,6 +25,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import type { Contact, Profile, ScheduledOutreach, WatchlistTarget } from "../types";
 import Card from "../components/ui/Card";
+import Modal from "../components/ui/Modal";
 import { toast } from "sonner";
 import { ensureUrl } from "../lib/utils";
 import {
@@ -153,6 +154,12 @@ export default function OutreachEmailsPage({
 
   /* ── watchlist targets ─────────────────────────────── */
   const [watchlistTargets, setWatchlistTargets] = useState<WatchlistTarget[]>([]);
+
+  /* ── disclosure UI ──────────────────────────────────── */
+  const [infoCollapsed, setInfoCollapsed] = useState(
+    () => localStorage.getItem("coffee_outreach_info_collapsed") === "true",
+  );
+  const [showExplainModal, setShowExplainModal] = useState(false);
 
   const isWatchlistSelection = selectedContactId.startsWith("w:");
   const selectedContact = isWatchlistSelection
@@ -347,6 +354,26 @@ export default function OutreachEmailsPage({
     openOutreach(channel, selectedContact, subject, message);
   };
 
+  const handleScheduleClick = () => {
+    if (!localStorage.getItem("coffee_outreach_explained")) {
+      setShowExplainModal(true);
+    } else {
+      saveItem();
+    }
+  };
+
+  const handleExplainConfirm = () => {
+    localStorage.setItem("coffee_outreach_explained", "true");
+    setShowExplainModal(false);
+    saveItem();
+  };
+
+  const toggleInfoCollapsed = () => {
+    const next = !infoCollapsed;
+    setInfoCollapsed(next);
+    localStorage.setItem("coffee_outreach_info_collapsed", String(next));
+  };
+
   const handleSendItem = async (item: ScheduledOutreach) => {
     const contact =
       contacts.find((c) => c.id === item.contact_id) ?? null;
@@ -473,6 +500,7 @@ export default function OutreachEmailsPage({
   /* ── render ─────────────────────────────────────────── */
 
   return (
+    <>
     <div className="mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-3">
       {/* Compose — 1/3 */}
       <div className="lg:col-span-1 space-y-6">
@@ -611,12 +639,38 @@ export default function OutreachEmailsPage({
               </div>
             )}
 
+            {/* Disclosure callout — auto-send channels only */}
+            {isAutoSendChannel(channel) && (
+              <div className="rounded-input bg-depth-1/60 px-3 py-2.5">
+                <button
+                  onClick={toggleInfoCollapsed}
+                  className="flex w-full items-center justify-between gap-2 cursor-pointer"
+                >
+                  <span className="text-xs font-medium text-glow">How auto-send works</span>
+                  <svg
+                    className={`h-3.5 w-3.5 text-white/40 transition-transform duration-200 ${infoCollapsed ? "" : "rotate-180"}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {!infoCollapsed && (
+                  <p className="mt-2 text-xs leading-relaxed text-white/50">
+                    Coffee sends your messages directly from your own Apple Mail and Messages app — not through Coffee's servers. Your email password and Apple ID are never stored or seen by Coffee. You control what sends and when — scheduled messages only go out if Coffee is running.
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Action buttons */}
             <div className="mt-2 flex gap-2">
               {isAutoSendChannel(channel) ? (
                 <>
                   <button
-                    onClick={saveItem}
+                    onClick={handleScheduleClick}
                     disabled={saving}
                     className="flex-1 rounded-button bg-glow/90 px-4 py-2.5 text-sm font-semibold text-depth-0 shadow-[0_0_24px_rgba(0,229,255,0.2)] transition-all hover:bg-glow disabled:opacity-50 cursor-pointer"
                   >
@@ -823,5 +877,43 @@ export default function OutreachEmailsPage({
         )}
       </div>
     </div>
+
+    {/* One-time auto-send explanation modal */}
+    <Modal
+      title="Before you schedule"
+      open={showExplainModal}
+      onClose={() => setShowExplainModal(false)}
+    >
+      <div className="grid gap-4">
+        <p className="text-sm text-white/70 leading-relaxed">
+          Coffee will ask macOS for <span className="text-white font-medium">Automation permission</span> to control Mail and Messages — this is how auto-send works.
+        </p>
+        <ul className="grid gap-2 text-sm text-white/60">
+          <li className="flex gap-2">
+            <span className="text-glow mt-0.5">✓</span>
+            <span>This is <strong className="text-white/80">not</strong> Accessibility or Full Disk Access — it only lets Coffee send messages on your behalf.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-glow mt-0.5">✓</span>
+            <span>Your email password and Apple ID are <strong className="text-white/80">never</strong> stored or seen by Coffee.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-glow mt-0.5">✓</span>
+            <span>Messages only send while Coffee is running. You can pause or cancel anytime.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-glow mt-0.5">✓</span>
+            <span>Revoke permission anytime in <strong className="text-white/80">System Settings → Privacy & Security → Automation</strong>.</span>
+          </li>
+        </ul>
+        <button
+          onClick={handleExplainConfirm}
+          className="mt-2 w-full rounded-button bg-glow/90 px-4 py-3 text-sm font-semibold text-depth-0 shadow-[0_0_24px_rgba(0,229,255,0.2)] transition-all hover:bg-glow cursor-pointer"
+        >
+          Got it, schedule my message
+        </button>
+      </div>
+    </Modal>
+    </>
   );
 }

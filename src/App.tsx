@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { supabase, supabaseMisconfigured } from "./lib/supabase";
 import type { Contact, ContactMeeting, Profile, Application, Page, FieldMap } from "./types";
 import Modal from "./components/ui/Modal";
+import Logo from "./components/ui/Logo";
 import { initialsFromName, todayISODate, formatDateLabel } from "./lib/utils";
 import { parseCsv, inferFieldMap, splitName, isEmail, cleanLinkedIn, cleanPhone } from "./lib/csvHelper";
 import { parsePdfToText, parsePdfFromUrl } from "./lib/resumeUtils";
@@ -217,6 +218,9 @@ export default function App() {
         setResetSent(false);
       }
       setSession(session);
+      if (window.electronAPI && session?.access_token) {
+        window.electronAPI.setAuthSession(session.access_token);
+      }
     });
 
     return () => sub.subscription.unsubscribe();
@@ -247,9 +251,9 @@ export default function App() {
 
   async function signOut() {
     await supabase.auth.signOut();
+    setSession(null);
     setContacts([]);
     setProfile(null);
-    setPage("contacts");
     setSelectedContactId("");
     setMeetings([]);
     setMeetingEdits({});
@@ -1048,14 +1052,9 @@ export default function App() {
           <div className="flex items-center gap-1 md:gap-2">
             <button
               onClick={() => { setPage("contacts"); setSelectedContactId(""); }}
-              className="mr-2 flex items-center gap-2 md:mr-4 cursor-pointer"
+              className="mr-2 md:mr-4 cursor-pointer"
             >
-              <svg className="h-7 w-7 text-glow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-                <path d="M6 1v3" /><path d="M10 1v3" /><path d="M14 1v3" />
-              </svg>
-              <span className="hidden text-base font-bold text-white md:inline">Coffee?</span>
+              <Logo size="sm" />
             </button>
 
             {/* Desktop nav links */}
