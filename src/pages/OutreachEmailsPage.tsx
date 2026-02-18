@@ -1,26 +1,3 @@
-/*
-  Supabase table used by this page:
-
-  create table if not exists public.scheduled_outreach (
-    id uuid primary key default gen_random_uuid(),
-    owner_id uuid not null references auth.users(id) on delete cascade,
-    contact_id uuid references public.contacts(id) on delete set null,
-    channel text not null,
-    subject text,
-    message text not null,
-    scheduled_at timestamptz not null,
-    status text not null default 'scheduled',
-    created_at timestamptz not null default now()
-  );
-
-  alter table public.scheduled_outreach enable row level security;
-
-  create policy "Users can manage their own scheduled outreach"
-    on public.scheduled_outreach for all
-    using (auth.uid() = owner_id)
-    with check (auth.uid() = owner_id);
-*/
-
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import type { Contact, Profile, ScheduledOutreach, WatchlistTarget } from "../types";

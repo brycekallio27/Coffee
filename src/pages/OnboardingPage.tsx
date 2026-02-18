@@ -13,13 +13,7 @@ interface OnboardingPageProps {
   inputCls: string;
 }
 
-const STEPS = [
-  "Personal Info",
-  "Career Goals",
-  "Your Profile",
-  "Integrations",
-  "Done",
-] as const;
+const STEPS = ["Personal Info", "Your Profile", "Done"] as const;
 
 const primaryBtn =
   "rounded-button bg-glow/90 px-5 py-2.5 text-sm font-semibold text-depth-0 shadow-[0_0_24px_rgba(0,229,255,0.2)] transition-all hover:bg-glow active:scale-[0.98] disabled:opacity-50 cursor-pointer";
@@ -39,13 +33,6 @@ export default function OnboardingPage({
   inputCls,
 }: OnboardingPageProps) {
   const [step, setStep] = useState(0);
-
-  const [school, setSchool] = useState("");
-  const [graduationYear, setGraduationYear] = useState("");
-  const [location, setLocation] = useState("");
-  const [targetRoles, setTargetRoles] = useState("");
-  const [targetCompanies, setTargetCompanies] = useState("");
-  const [skippedIntegrations, setSkippedIntegrations] = useState(false);
 
   const canAdvanceStep0 = displayName.trim().length > 0;
 
@@ -169,7 +156,7 @@ export default function OnboardingPage({
         {step === 0 && (
           <StepCard
             title="Personal Info"
-            subtitle="Tell us a bit about yourself so we can personalize your experience."
+            subtitle="Tell us your name so we can personalize your experience."
           >
             <div className="grid gap-3">
               <input
@@ -178,55 +165,13 @@ export default function OnboardingPage({
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
               />
-              <input
-                className={inputCls}
-                placeholder="School or Current Company"
-                value={school}
-                onChange={(e) => setSchool(e.target.value)}
-              />
-              <input
-                className={inputCls}
-                placeholder="Graduation Year or Current Role"
-                value={graduationYear}
-                onChange={(e) => setGraduationYear(e.target.value)}
-              />
-              <input
-                className={inputCls}
-                placeholder="Location (e.g. San Francisco, CA)"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-              />
             </div>
             <Nav nextDisabled={!canAdvanceStep0} hideBack />
           </StepCard>
         )}
 
-        {/* Step 2: Career Goals */}
+        {/* Step 2: Your Profile */}
         {step === 1 && (
-          <StepCard
-            title="Career Goals"
-            subtitle="What are you working toward? This helps us tailor suggestions."
-          >
-            <div className="grid gap-3">
-              <input
-                className={inputCls}
-                placeholder="Target roles or industries (e.g. Product Management, Fintech)"
-                value={targetRoles}
-                onChange={(e) => setTargetRoles(e.target.value)}
-              />
-              <input
-                className={inputCls}
-                placeholder="Target companies (e.g. Stripe, Notion, Google)"
-                value={targetCompanies}
-                onChange={(e) => setTargetCompanies(e.target.value)}
-              />
-            </div>
-            <Nav />
-          </StepCard>
-        )}
-
-        {/* Step 3: Your Profile */}
-        {step === 2 && (
           <StepCard
             title="Your Profile"
             subtitle="Add your LinkedIn and resume so we can help you draft outreach."
@@ -256,76 +201,8 @@ export default function OnboardingPage({
           </StepCard>
         )}
 
-        {/* Step 4: Connect Integrations */}
-        {step === 3 && (
-          <StepCard
-            title="Connect Integrations"
-            subtitle="Link your calendar and email for automatic meeting tracking."
-          >
-            <div className="grid gap-3">
-              <button
-                className="flex items-center gap-3 rounded-input bg-depth-0/30 px-4 py-3 text-left text-sm text-white transition-colors hover:bg-white/[0.04] cursor-pointer"
-                onClick={() => {}}
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-button bg-glow/[0.08]">
-                  <svg className="h-5 w-5 text-glow/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </span>
-                <div>
-                  <div className="font-medium">Connect Calendar</div>
-                  <div className="text-xs text-white/30">Google Calendar, Outlook (coming soon)</div>
-                </div>
-              </button>
-              <button
-                className="flex items-center gap-3 rounded-input bg-depth-0/30 px-4 py-3 text-left text-sm text-white transition-colors hover:bg-white/[0.04] cursor-pointer"
-                onClick={() => {}}
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-button bg-glow/[0.08]">
-                  <svg className="h-5 w-5 text-glow/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </span>
-                <div>
-                  <div className="font-medium">Connect Email</div>
-                  <div className="text-xs text-white/30">Gmail, Outlook (coming soon)</div>
-                </div>
-              </button>
-            </div>
-
-            {skippedIntegrations && (
-              <div className="mt-4 rounded-input bg-glow/[0.04] px-4 py-3 text-xs text-white/40">
-                <span className="font-semibold text-white/50">Limited Mode:</span> Without
-                calendar and email connected, some features like automatic
-                meeting logging won&apos;t be available. You can connect them
-                later in Settings.
-              </div>
-            )}
-
-            <div className="mt-6 flex items-center justify-between">
-              <button className={secondaryBtn} onClick={back}>
-                Back
-              </button>
-              <div className="flex items-center gap-2">
-                <button
-                  className={secondaryBtn}
-                  onClick={() => {
-                    setSkippedIntegrations(true);
-                    next();
-                  }}
-                >
-                  Skip for now
-                </button>
-                <button className={primaryBtn} onClick={next}>
-                  Next
-                </button>
-              </div>
-            </div>
-          </StepCard>
-        )}
-
-        {/* Step 5: Done */}
-        {step === 4 && (
+        {/* Step 3: Done */}
+        {step === 2 && (
           <StepCard
             title="You're all set!"
             subtitle="Your profile is ready. Start building your network."
@@ -339,15 +216,6 @@ export default function OnboardingPage({
               <p className="text-sm text-white/40">
                 We&apos;ve saved your info. You can always update it in Settings.
               </p>
-
-              {skippedIntegrations && (
-                <div className="mt-4 w-full rounded-input bg-glow/[0.04] px-4 py-3 text-xs text-white/40">
-                  <span className="font-semibold text-white/50">Limited Mode:</span>{" "}
-                  Integrations were skipped. Head to Settings any time to
-                  connect your calendar and email.
-                </div>
-              )}
-
               <button
                 className={`${primaryBtn} mt-6`}
                 disabled={savingProfile}

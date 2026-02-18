@@ -17,69 +17,6 @@ import OnboardingPage from "./pages/OnboardingPage";
 import WatchlistPage from "./pages/WatchlistPage";
 import OutreachEmailsPage from "./pages/OutreachEmailsPage";
 
-/* =============================== IMPORTANT ===============================
-This update adds a Contact Details page with per-meeting notes (mini folders by date).
-
-To persist meetings/notes in Supabase, create this table (recommended):
-
--- 1) Table
-create table if not exists public.contact_meetings (
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null references auth.users(id) on delete cascade,
-  contact_id uuid not null references public.contacts(id) on delete cascade,
-  meeting_date date not null,
-  title text null,
-  notes text null,
-  created_at timestamptz not null default now()
-);
-
-create index if not exists idx_contact_meetings_contact_id on public.contact_meetings(contact_id);
-create index if not exists idx_contact_meetings_owner_id on public.contact_meetings(owner_id);
-
--- 2) RLS (typical)
-alter table public.contact_meetings enable row level security;
-
-create policy "meetings_select_own"
-on public.contact_meetings for select
-using (auth.uid() = owner_id);
-
-create policy "meetings_insert_own"
-on public.contact_meetings for insert
-with check (auth.uid() = owner_id);
-
-create policy "meetings_update_own"
-on public.contact_meetings for update
-using (auth.uid() = owner_id)
-with check (auth.uid() = owner_id);
-
-create policy "meetings_delete_own"
-on public.contact_meetings for delete
-using (auth.uid() = owner_id);
-
--- 3) Applications Table
-create table if not exists public.applications (
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null references auth.users(id) on delete cascade,
-  company text not null,
-  link text,
-  date_applied date,
-  status text not null default 'Applied',
-  created_at timestamptz not null default now()
-);
-
-create index if not exists idx_applications_owner_id on public.applications(owner_id);
-
-alter table public.applications enable row level security;
-
-create policy "applications_select_own" on public.applications for select using (auth.uid() = owner_id);
-create policy "applications_insert_own" on public.applications for insert with check (auth.uid() = owner_id);
-create policy "applications_update_own" on public.applications for update using (auth.uid() = owner_id);
-create policy "applications_delete_own" on public.applications for delete using (auth.uid() = owner_id);
-
--- 4) Link Applications to Contacts
-alter table public.applications add column if not exists contact_id uuid references public.contacts(id) on delete set null;
-create index if not exists idx_applications_contact_id on public.applications(contact_id);
-========================================================================= */
 
 /* =============================== App =============================== */
 
@@ -158,7 +95,6 @@ export default function App() {
   const [editLinkedIn, setEditLinkedIn] = useState("");
 
   const [importFileName, setImportFileName] = useState<string>("");
-  const [, setImportHeaders] = useState<string[]>([]);
   const [importRows, setImportRows] = useState<Record<string, string>[]>([]);
   const [importMap, setImportMap] = useState<FieldMap>({});
   const [importing, setImporting] = useState(false);
@@ -329,7 +265,7 @@ export default function App() {
       .maybeSingle();
 
     if (error) {
-      console.error(error);
+      toast.error("Failed to load profile.");
       return;
     }
 
@@ -352,7 +288,7 @@ export default function App() {
       };
 
       const { error: insErr } = await supabase.from("profiles").insert(insertPayload);
-      if (insErr) console.error(insErr);
+      if (insErr) toast.error("Failed to create profile.");
 
       const newProfile: Profile = {
         id: session.user.id,
@@ -534,7 +470,7 @@ export default function App() {
 
     setLoadingApps(false);
     if (error) {
-      console.error(error);
+      toast.error("Failed to load applications.");
       return;
     }
     setApplications((data ?? []) as Application[]);
@@ -885,7 +821,6 @@ export default function App() {
     const text = await file.text();
     const parsed = parseCsv(text);
 
-    setImportHeaders(parsed.headers);
     setImportRows(parsed.rows);
 
     const mapping = inferFieldMap(parsed.headers, parsed.rows);
@@ -969,7 +904,6 @@ export default function App() {
       }
 
       setImportFileName("");
-      setImportHeaders([]);
       setImportRows([]);
       setImportMap({});
       await loadContacts();
@@ -1021,7 +955,6 @@ export default function App() {
         setSignupLinkedIn={setSignupLinkedIn}
         signupCareerInterests={signupCareerInterests}
         setSignupCareerInterests={setSignupCareerInterests}
-        signupResumeFile={signupResumeFile}
         setSignupResumeFile={setSignupResumeFile}
       />
     );

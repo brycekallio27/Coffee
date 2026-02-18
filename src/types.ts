@@ -50,7 +50,6 @@ export type Page =
   | "applications"
   | "settings"
   | "onboarding"
-  | "profile"
   | "network_watchlist"
   | "outreach_emails";
 

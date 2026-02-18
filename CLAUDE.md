@@ -72,7 +72,7 @@ src/
 
 ### Supabase Tables
 
-SQL creation scripts in App.tsx comments (lines ~10-65), WatchlistPage.tsx header, and OutreachEmailsPage.tsx header. Tables: `contacts`, `contact_meetings`, `applications`, `profiles`, `watchlist_targets`, `scheduled_outreach`. Storage bucket `resumes` (public).
+Full schema in `docs/schema.sql` (safe to re-run). Tables: `contacts`, `contact_meetings`, `applications`, `profiles`, `watchlist_targets`, `scheduled_outreach`. Storage bucket `resumes` (public).
 
 ### CSV Import (src/lib/csvHelper.ts)
 

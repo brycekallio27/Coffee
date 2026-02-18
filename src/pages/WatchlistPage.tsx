@@ -1,26 +1,3 @@
-/*
-  Supabase table used by this page:
-
-  create table if not exists public.watchlist_targets (
-    id uuid primary key default gen_random_uuid(),
-    owner_id uuid not null references auth.users(id) on delete cascade,
-    person_name text not null,
-    company text not null,
-    role text,
-    status text not null default 'not_contacted',
-    next_action_date date,
-    notes text,
-    created_at timestamptz not null default now()
-  );
-
-  alter table public.watchlist_targets enable row level security;
-
-  create policy "Users can manage their own watchlist targets"
-    on public.watchlist_targets for all
-    using (auth.uid() = owner_id)
-    with check (auth.uid() = owner_id);
-*/
-
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import type { WatchlistTarget } from "../types";

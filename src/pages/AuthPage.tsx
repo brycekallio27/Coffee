@@ -22,7 +22,6 @@ interface AuthPageProps {
   setSignupLinkedIn: (v: string) => void;
   signupCareerInterests: string;
   setSignupCareerInterests: (v: string) => void;
-  signupResumeFile: File | null;
   setSignupResumeFile: (v: File | null) => void;
 }
 
