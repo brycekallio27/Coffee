@@ -110,7 +110,6 @@ export default function AuthPage({
   const [signupStep, setSignupStep] = useState(0); // 0: account, 1: profile, 2: resume+interests
   const [stepping, setStepping] = useState(false);
   const [resumeFileName, setResumeFileName] = useState<string | null>(null);
-  const [resumeError, setResumeError] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -148,7 +147,6 @@ export default function AuthPage({
   useEffect(() => {
     setSignupStep(0);
     setResumeFileName(null);
-    setResumeError(false);
   }, [mode]);
 
   const canAdvanceStep0 =
@@ -166,7 +164,6 @@ export default function AuthPage({
     const f = e.target.files?.[0] ?? null;
     if (f) {
       setResumeFileName(f.name);
-      setResumeError(false);
       setSignupResumeFile(f);
     } else {
       setResumeFileName(null);
@@ -175,10 +172,6 @@ export default function AuthPage({
   }
 
   function handleCreateAccount() {
-    if (!resumeFileName) {
-      setResumeError(true);
-      return;
-    }
     signUp();
   }
 
