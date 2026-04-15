@@ -489,6 +489,37 @@ export default function OutreachEmailsPage({
     }
   }
 
+  /* ── channel availability (cross-check contact info) ── */
+
+  // Watchlist targets have no email/phone — only LinkedIn is valid for them
+  const hasEmail = !isWatchlistSelection && !!selectedContact?.email?.trim();
+  const hasPhone = !isWatchlistSelection && !!selectedContact?.phone?.trim();
+
+  const channelDisabledReason = (ch: string): string | null => {
+    if (!selectedContactId) return null; // no contact selected yet, allow selection
+    if (ch === "email") {
+      if (isWatchlistSelection) return "Watchlist targets have no email on file";
+      if (!hasEmail) return "No email on file for this contact";
+    }
+    if (ch === "sms") {
+      if (isWatchlistSelection) return "Watchlist targets have no phone on file";
+      if (!hasPhone) return "No phone number on file for this contact";
+    }
+    return null;
+  };
+
+  // Auto-switch channel when the selected contact changes and the current channel becomes unavailable
+  useEffect(() => {
+    if (!selectedContactId) return;
+    const reason = channelDisabledReason(channel);
+    if (!reason) return;
+    // Pick the first available channel
+    if (channel === "email" && hasPhone) setChannel("sms");
+    else if (channel === "sms" && hasEmail) setChannel("email");
+    else setChannel("linkedin");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedContactId, hasEmail, hasPhone]);
+
   /* ── derived ────────────────────────────────────────── */
 
   const scheduledItems = items.filter((i) => i.status === "scheduled");
@@ -562,20 +593,31 @@ export default function OutreachEmailsPage({
             <div>
               <div className="mb-1 text-xs font-medium text-white/35">Auto-Send Channels</div>
               <div className="flex gap-2">
-                {AUTO_SEND_CHANNELS.map((ch) => (
-                  <button
-                    key={ch.value}
-                    onClick={() => setChannel(ch.value)}
-                    className={`flex-1 rounded-input border px-3 py-2 text-sm font-medium transition-all cursor-pointer ${
-                      channel === ch.value
-                        ? "border-glow/30 bg-glow/[0.08] text-glow"
-                        : "border-white/[0.06] bg-white/[0.03] text-white/50 hover:bg-white/[0.05]"
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5">{channelIcon(ch.value)} {ch.label}</div>
-                    <div className="mt-0.5 text-[10px] font-normal text-white/25">{ch.description}</div>
-                  </button>
-                ))}
+                {AUTO_SEND_CHANNELS.map((ch) => {
+                  const disabledReason = channelDisabledReason(ch.value);
+                  const isDisabled = !!disabledReason;
+                  return (
+                    <div key={ch.value} className="relative flex-1 group">
+                      <button
+                        onClick={() => !isDisabled && setChannel(ch.value)}
+                        disabled={isDisabled}
+                        title={disabledReason ?? undefined}
+                        className={`w-full rounded-input border px-3 py-2 text-sm font-medium transition-all ${
+                          isDisabled
+                            ? "border-white/[0.03] bg-white/[0.01] text-white/20 cursor-not-allowed opacity-50"
+                            : channel === ch.value
+                              ? "border-glow/30 bg-glow/[0.08] text-glow cursor-pointer"
+                              : "border-white/[0.06] bg-white/[0.03] text-white/50 hover:bg-white/[0.05] cursor-pointer"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5">{channelIcon(ch.value)} {ch.label}</div>
+                        <div className={`mt-0.5 text-[10px] font-normal ${isDisabled ? "text-white/15" : "text-white/25"}`}>
+                          {isDisabled ? disabledReason : ch.description}
+                        </div>
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

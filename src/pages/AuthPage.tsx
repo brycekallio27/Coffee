@@ -156,11 +156,11 @@ export default function AuthPage({
     authEmail.trim().length > 0 &&
     password.trim().length >= 6;
 
-  const canAdvanceStep1 =
-    signupPhone.trim().length > 0 && signupLinkedIn.trim().length > 0;
+  // Phone + LinkedIn are optional — users can fill them in Settings after signing up
+  const canAdvanceStep1 = true;
 
-  /* Resume is required to create account */
-  const canSubmit = resumeFileName !== null;
+  // Resume is optional — can be uploaded later in Settings
+  const canSubmit = true;
 
   function handleResumeChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
@@ -333,17 +333,17 @@ export default function AuthPage({
                   </div>
                 )}
 
-                {/* Step 1: Profile info */}
+                {/* Step 1: Profile info (all optional) */}
                 {signupStep === 1 && (
                   <div className="space-y-4">
                     <div>
                       <h2 className="text-xl font-semibold text-white mb-1">Your profile</h2>
-                      <p className="text-sm text-white/30">Help us personalize your experience</p>
+                      <p className="text-sm text-white/30">Optional — you can fill these in later from Settings</p>
                     </div>
 
                     <div className="space-y-3">
-                      <FloatingInput label="Phone number" value={signupPhone} onChange={setSignupPhone} />
-                      <FloatingInput label="LinkedIn URL" value={signupLinkedIn} onChange={setSignupLinkedIn} />
+                      <FloatingInput label="Phone number (optional)" value={signupPhone} onChange={setSignupPhone} />
+                      <FloatingInput label="LinkedIn URL (optional)" value={signupLinkedIn} onChange={setSignupLinkedIn} />
                     </div>
 
                     <div className="flex gap-3">
@@ -355,13 +355,13 @@ export default function AuthPage({
                   </div>
                 )}
 
-                {/* Step 2: Resume (required) + Career interests */}
+                {/* Step 2: Resume (optional) + Career interests */}
                 {signupStep === 2 && (
                   <div className="space-y-4">
                     <div>
                       <h2 className="text-xl font-semibold text-white mb-1">Upload your resume</h2>
                       <p className="text-sm text-white/30">
-                        Required for the Job Description Comparison tool
+                        Optional — powers the JD Scorer. You can upload later in Settings.
                       </p>
                     </div>
 
@@ -370,9 +370,7 @@ export default function AuthPage({
                       className={`rounded-xl border p-4 transition-all cursor-pointer ${
                         resumeFileName
                           ? "border-glow/30 bg-glow/[0.04]"
-                          : resumeError
-                            ? "border-danger/40 bg-danger/[0.04]"
-                            : "border-white/[0.08] border-dashed bg-white/[0.02] hover:border-glow/20 hover:bg-white/[0.04]"
+                          : "border-white/[0.08] border-dashed bg-white/[0.02] hover:border-glow/20 hover:bg-white/[0.04]"
                       }`}
                       onClick={() => fileInputRef.current?.click()}
                     >
@@ -403,17 +401,13 @@ export default function AuthPage({
                       ) : (
                         /* Empty state */
                         <div className="flex flex-col items-center py-2 text-center">
-                          <div className={`mb-2 flex h-10 w-10 items-center justify-center rounded-xl ${resumeError ? "bg-danger/10" : "bg-white/[0.04]"}`}>
-                            <svg className={`h-5 w-5 ${resumeError ? "text-danger/70" : "text-white/25"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.04]">
+                            <svg className="h-5 w-5 text-white/25" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
                             </svg>
                           </div>
-                          <p className={`text-sm font-medium ${resumeError ? "text-danger/80" : "text-white/50"}`}>
-                            {resumeError ? "Resume required" : "Click to upload your resume"}
-                          </p>
-                          <p className={`text-xs mt-0.5 ${resumeError ? "text-danger/50" : "text-white/25"}`}>
-                            {resumeError ? "A PDF resume is required to continue" : "PDF only · Required"}
-                          </p>
+                          <p className="text-sm font-medium text-white/50">Click to upload your resume</p>
+                          <p className="text-xs mt-0.5 text-white/25">PDF only · Optional</p>
                         </div>
                       )}
                     </div>
@@ -442,12 +436,9 @@ export default function AuthPage({
                       </button>
                     </div>
 
-                    {/* Required note */}
-                    {!resumeFileName && (
-                      <p className="text-center text-xs text-white/20">
-                        A PDF resume is required to use Job Description Comparison
-                      </p>
-                    )}
+                    <p className="text-center text-xs text-white/20">
+                      You can upload or change your resume anytime in Settings
+                    </p>
                   </div>
                 )}
               </div>
