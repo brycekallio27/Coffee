@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coffee?</title>
+  <style>
+    /* ── Design tokens (Bioluminescent Depth) ── */
+    :root {
+      --depth-0: #050c12;
+      --depth-1: #0a1520;
+      --glow: #00e5ff;
+      --glow-dim: rgba(0, 229, 255, 0.12);
+      --border: rgba(255, 255, 255, 0.06);
+      --text: rgba(255, 255, 255, 0.85);
+      --text-dim: rgba(255, 255, 255, 0.45);
+      --red: #f87171;
+      --green: #34d399;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 340px;
+      min-height: 200px;
+      background: var(--depth-0);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+      font-size: 13px;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--glow-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--glow);
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .header-title { font-weight: 600; font-size: 14px; color: white; }
+    .header-sub   { font-size: 11px; color: var(--text-dim); }
+
+    /* ── Sections ── */
+    .section { padding: 14px 16px; }
+    .section + .section { border-top: 1px solid var(--border); }
+
+    /* ── Fields ── */
+    label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+    input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 13px;
+      padding: 7px 10px;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+      margin-bottom: 10px;
+    }
+    input:focus {
+      border-color: rgba(0, 229, 255, 0.3);
+      background: rgba(255,255,255,0.06);
+      box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.15);
+    }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    /* ── Buttons ── */
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px;
+      cursor: pointer;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--glow);
+      color: var(--depth-0);
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+    }
+    .btn-primary:not(:disabled):hover { opacity: 0.9; }
+    .btn-ghost {
+      background: rgba(255,255,255,0.05);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:not(:disabled):hover { background: rgba(255,255,255,0.08); }
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    /* ── Status messages ── */
+    .msg {
+      border-radius: var(--radius);
+      padding: 9px 12px;
+      font-size: 12px;
+      margin-top: 10px;
+      line-height: 1.4;
+    }
+    .msg-error { background: rgba(248,113,113,0.1); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+    .msg-success { background: rgba(52,211,153,0.1); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+
+    /* ── Not-on-LinkedIn notice ── */
+    .notice {
+      padding: 20px 16px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .notice strong { color: var(--text); }
+
+    /* ── Logout link ── */
+    .logout-row {
+      padding: 8px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logout-row span { font-size: 11px; color: var(--text-dim); }
+    .logout-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 11px;
+      cursor: pointer;
+      padding: 0;
+    }
+    .logout-btn:hover { color: var(--red); }
+
+    /* ── Spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 12px; height: 12px;
+      border: 2px solid rgba(5,12,18,0.3);
+      border-top-color: var(--depth-0);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">☕</div>
+    <div>
+      <div class="header-title">Coffee?</div>
+      <div class="header-sub">LinkedIn Contact Importer</div>
+    </div>
+  </div>
+
+  <!-- LOGIN VIEW -->
+  <div id="view-login" class="section hidden">
+    <label>Email</label>
+    <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email" />
+    <label>Password</label>
+    <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+    <button class="btn btn-primary" id="btn-login">Sign in to Coffee?</button>
+    <div id="login-error" class="msg msg-error hidden"></div>
+  </div>
+
+  <!-- NOT ON LINKEDIN VIEW -->
+  <div id="view-not-linkedin" class="hidden">
+    <div class="notice">
+      <strong>Navigate to a LinkedIn profile</strong><br />
+      Open a <code>linkedin.com/in/…</code> page, then click this extension to import the contact.
+    </div>
+  </div>
+
+  <!-- IMPORT VIEW -->
+  <div id="view-import" class="hidden">
+    <div class="section">
+      <div class="row2">
+        <div>
+          <label>First Name</label>
+          <input type="text" id="f-first" />
+        </div>
+        <div>
+          <label>Last Name</label>
+          <input type="text" id="f-last" />
+        </div>
+      </div>
+      <label>Job Title</label>
+      <input type="text" id="f-title" />
+      <label>Company</label>
+      <input type="text" id="f-company" />
+      <label>Email <span style="font-size:10px;color:var(--text-dim);font-weight:400;text-transform:none">(if shown on profile)</span></label>
+      <input type="email" id="f-email" placeholder="optional" />
+      <label>LinkedIn URL</label>
+      <input type="text" id="f-linkedin" />
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="btn-cancel">Cancel</button>
+        <button class="btn btn-primary" id="btn-save">
+          <span class="spinner hidden" id="save-spinner"></span>Add to Coffee?
+        </button>
+      </div>
+      <div id="save-msg" class="msg hidden"></div>
+    </div>
+  </div>
+
+  <!-- Logout footer (shown when logged in) -->
+  <div id="footer-auth" class="logout-row hidden">
+    <span id="footer-email"></span>
+    <button class="logout-btn" id="btn-logout">Sign out</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

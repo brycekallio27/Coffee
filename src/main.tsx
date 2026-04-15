@@ -4,6 +4,13 @@ import { Toaster } from 'sonner'
 import './index.css'
 import App from './App.tsx'
 
+// Register service worker for offline PWA support
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js').catch((error) => {
+    console.log('Service Worker registration failed:', error)
+  })
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Toaster

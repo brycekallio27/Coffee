@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
+import { createCalendarEvent } from "../lib/googleCalendar";
 import type { Contact, Profile, ScheduledOutreach, WatchlistTarget } from "../types";
 import Card from "../components/ui/Card";
 import Modal from "../components/ui/Modal";
@@ -18,6 +19,10 @@ interface OutreachEmailsPageProps {
   inputCls: string;
   selectCls: string;
 }
+
+/* ── Email open tracking ──────────────────────────────── */
+
+const TRACKER_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/email-open-tracker`;
 
 /* ── Templates ────────────────────────────────────────── */
 
@@ -276,17 +281,47 @@ export default function OutreachEmailsPage({
         toast.error("Failed to schedule: " + error.message);
       } else {
         toast.success("Outreach scheduled!");
+
+        // Capture values before resetForm() clears state
+        const gcalConnected = !!profile?.google_calendar_token;
+        const capturedContactId = selectedContactId;
+        const capturedSubject = subject;
+        const capturedMessage = message.trim();
+        const capturedScheduledAt = scheduledAt;
+
         resetForm();
         await loadItems();
+
+        // ── Google Calendar: create event if connected ──────────────────────
+        if (gcalConnected) {
+          const contact = contacts.find((c) => c.id === capturedContactId);
+          const contactName = contact
+            ? [contact.first_name, contact.last_name].filter(Boolean).join(" ")
+            : null;
+          const eventTitle = contactName
+            ? `Outreach: ${contactName}${capturedSubject ? ` — ${capturedSubject}` : ""}`
+            : `Outreach${capturedSubject ? `: ${capturedSubject}` : ""}`;
+
+          createCalendarEvent({
+            title: eventTitle,
+            description: capturedMessage,
+            startDatetime: new Date(capturedScheduledAt).toISOString(),
+          }).catch((err: Error) => {
+            // Non-blocking: calendar failures don't undo the schedule
+            toast.warning(`Scheduled, but calendar event failed: ${err.message}`);
+          });
+        }
       }
     }
     setSaving(false);
   };
 
-  const markStatus = async (id: string, status: "sent" | "skipped") => {
+  const markStatus = async (id: string, status: "sent" | "skipped" | "opened") => {
+    const update: Record<string, unknown> = { status };
+    if (status === "opened") update.opened_at = new Date().toISOString();
     const { error } = await supabase
       .from("scheduled_outreach")
-      .update({ status })
+      .update(update)
       .eq("id", id);
     if (error) {
       toast.error("Failed to update status: " + error.message);
@@ -352,9 +387,16 @@ export default function OutreachEmailsPage({
   };
 
   const handleSendItem = async (item: ScheduledOutreach) => {
-    const contact =
-      contacts.find((c) => c.id === item.contact_id) ?? null;
-    openOutreach(item.channel, contact, item.subject ?? "", item.message);
+    const contact = contacts.find((c) => c.id === item.contact_id) ?? null;
+    // For email: append a tracking pixel so opens auto-update when HTML email is viewed.
+    // Note: mailto: bodies are plain-text — the pixel only fires in HTML-capable clients
+    // (e.g. direct SMTP/future Coffee native send). Manual "Mark Opened" is always available.
+    let messageToSend = item.message;
+    if (item.channel === "email" && item.tracking_token) {
+      const pixelUrl = `${TRACKER_BASE}?t=${item.tracking_token}`;
+      messageToSend += `\n\n<img src="${pixelUrl}" width="1" height="1" style="display:none" alt="" />`;
+    }
+    openOutreach(item.channel, contact, item.subject ?? "", messageToSend);
     await markStatus(item.id, "sent");
   };
 
@@ -451,7 +493,7 @@ export default function OutreachEmailsPage({
 
   const scheduledItems = items.filter((i) => i.status === "scheduled");
   const completedItems = items.filter(
-    (i) => i.status === "sent" || i.status === "skipped",
+    (i) => i.status === "sent" || i.status === "skipped" || i.status === "opened",
   );
 
   /* ── Channel icon SVGs ──────────────────────────────── */
@@ -832,21 +874,40 @@ export default function OutreachEmailsPage({
                         {item.channel.toUpperCase()}
                       </span>
                       <span className={`inline-block rounded-badge px-2 py-0.5 text-xs font-medium ${
-                        item.status === "sent" ? "bg-glow/[0.08] text-glow/60" : "bg-white/[0.04] text-white/30"
+                        item.status === "opened"
+                          ? "bg-emerald-500/[0.12] text-emerald-400"
+                          : item.status === "sent"
+                          ? "bg-glow/[0.08] text-glow/60"
+                          : "bg-white/[0.04] text-white/30"
                       }`}>
-                        {item.status === "sent" ? "Sent" : "Skipped"}
+                        {item.status === "opened" ? "📬 Opened" : item.status === "sent" ? "Sent" : "Skipped"}
                       </span>
                     </div>
                     <div className="mt-0.5 font-data text-xs text-white/20">
                       {new Date(item.scheduled_at).toLocaleString()}
+                      {item.status === "opened" && item.opened_at && (
+                        <span className="ml-2 text-emerald-400/40">
+                          · opened {new Date(item.opened_at).toLocaleDateString()}
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <button
-                    onClick={() => deleteItem(item.id)}
-                    className="ml-2 text-xs font-medium text-danger/50 transition-colors hover:text-danger cursor-pointer"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex flex-col items-end gap-1 shrink-0 ml-3">
+                    {item.status === "sent" && item.channel === "email" && (
+                      <button
+                        onClick={() => markStatus(item.id, "opened")}
+                        className="text-xs font-medium text-emerald-400/50 transition-colors hover:text-emerald-400 cursor-pointer whitespace-nowrap"
+                      >
+                        Mark Opened
+                      </button>
+                    )}
+                    <button
+                      onClick={() => deleteItem(item.id)}
+                      className="text-xs font-medium text-danger/50 transition-colors hover:text-danger cursor-pointer"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -34,6 +34,8 @@ interface SettingsPageProps {
   inputCls: string;
   selectCls: string;
   reparseResume: () => void;
+  onCalendarConnect: () => void;
+  onCalendarDisconnect: () => void;
 }
 
 export default function SettingsPage({
@@ -62,6 +64,8 @@ export default function SettingsPage({
   inputCls,
   selectCls,
   reparseResume,
+  onCalendarConnect,
+  onCalendarDisconnect,
 }: SettingsPageProps) {
   const [jobDescription, setJobDescription] = useState("");
   const [adjustResult, setAdjustResult] = useState("");
@@ -209,6 +213,66 @@ export default function SettingsPage({
 
               <p className="text-xs text-white/25">Supabase may require confirmation when changing email.</p>
             </div>
+          </Card>
+        </div>
+
+        {/* Integrations — full width */}
+        <div className="lg:col-span-3">
+          <Card
+            title="Integrations"
+            subtitle="Connect external services to power features like automatic calendar scheduling."
+          >
+            <div className="flex items-center justify-between rounded-input bg-depth-0/30 p-4">
+              <div className="flex items-center gap-3">
+                {/* Google Calendar icon */}
+                <div className="flex h-9 w-9 items-center justify-center rounded-button bg-white/[0.06]">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
+                    <rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" strokeWidth="1.5" className="text-white/40" />
+                    <path d="M3 9h18" stroke="currentColor" strokeWidth="1.5" className="text-white/40" />
+                    <path d="M8 2v4M16 2v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-white/40" />
+                    <rect x="7" y="13" width="4" height="3" rx="0.5" fill="currentColor" className="text-glow/70" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-white">Google Calendar</div>
+                  <div className="mt-0.5 text-xs text-white/40">
+                    {profile?.google_calendar_token
+                      ? "Connected — outreach events are added to your primary calendar automatically."
+                      : "Connect to automatically add scheduled outreach to your Google Calendar."}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0 ml-4">
+                {profile?.google_calendar_token ? (
+                  <>
+                    <span className="flex items-center gap-1.5 text-xs text-green-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-green-400 inline-block" />
+                      Connected
+                    </span>
+                    <button
+                      onClick={onCalendarDisconnect}
+                      className="rounded-button bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-white/50 transition-colors hover:bg-white/[0.08] hover:text-white/70 cursor-pointer"
+                    >
+                      Disconnect
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={onCalendarConnect}
+                    className="rounded-button bg-glow/90 px-4 py-2 text-sm font-semibold text-depth-0 shadow-[0_0_20px_rgba(0,229,255,0.18)] transition-all hover:bg-glow cursor-pointer"
+                  >
+                    Connect
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {!profile?.google_calendar_token && (
+              <p className="mt-3 text-xs text-white/25">
+                You'll be redirected to Google to authorise access. Only calendar event creation is requested — Coffee? cannot read your existing events.
+              </p>
+            )}
           </Card>
         </div>
 

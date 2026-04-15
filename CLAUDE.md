@@ -1,6 +1,8 @@
-# CLAUDE.md
+# Coffee — CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+_Previously known as gaj-dash. Networking + job search app._
+
+This file provides guidance to Claude when working with code in this repository.
 
 ## Build & Dev Commands
 

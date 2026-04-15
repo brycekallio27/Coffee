@@ -35,8 +35,19 @@ create table if not exists public.profiles (
   avatar_url text,
   resume_text text,
   phone text,
-  career_interests text
+  career_interests text,
+  google_calendar_token text,
+  google_calendar_refresh_token text,
+  google_calendar_token_expiry text
 );
+
+-- Idempotent column additions (safe to re-run on existing databases)
+alter table public.profiles
+  add column if not exists phone                          text,
+  add column if not exists career_interests               text,
+  add column if not exists google_calendar_token          text,
+  add column if not exists google_calendar_refresh_token  text,
+  add column if not exists google_calendar_token_expiry   text;
 
 alter table public.profiles enable row level security;
 
@@ -127,3 +138,12 @@ alter table public.scheduled_outreach enable row level security;
 create policy "outreach_all_own" on public.scheduled_outreach for all
   using (auth.uid() = owner_id)
   with check (auth.uid() = owner_id);
+
+-- ── email open tracking (run after initial setup if upgrading) ────────────────
+alter table public.scheduled_outreach
+  add column if not exists tracking_token uuid default gen_random_uuid(),
+  add column if not exists opened_at timestamptz;
+
+-- Edge Function looks up rows by tracking_token — index for performance
+create index if not exists idx_outreach_tracking_token
+  on public.scheduled_outreach(tracking_token);

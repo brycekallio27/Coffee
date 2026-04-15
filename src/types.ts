@@ -31,6 +31,9 @@ export type Profile = {
   resume_text: string | null;
   phone: string | null;
   career_interests: string | null;
+  google_calendar_token: string | null;
+  google_calendar_refresh_token: string | null;
+  google_calendar_token_expiry: string | null;
 };
 
 export type Application = {
@@ -48,10 +51,12 @@ export type Page =
   | "contacts"
   | "contact_details"
   | "applications"
+  | "analytics"
   | "settings"
   | "onboarding"
   | "network_watchlist"
-  | "outreach_emails";
+  | "outreach_emails"
+  | "jd_scorer";
 
 export type WatchlistTarget = {
   id: string;
@@ -73,7 +78,9 @@ export type ScheduledOutreach = {
   subject: string | null;
   message: string;
   scheduled_at: string; // ISO 8601 timestamptz
-  status: string; // "scheduled" | "sent" | "skipped"
+  status: string; // "scheduled" | "sent" | "skipped" | "opened"
+  tracking_token: string | null;
+  opened_at: string | null;
   created_at: string;
 };
 

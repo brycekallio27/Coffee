@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import Card from "../components/ui/Card";
 import type { Contact } from "../types";
-import { ensureUrl } from "../lib/utils";
+import { ensureUrl, todayISODate } from "../lib/utils";
+import { supabase } from "../lib/supabase";
 
 interface ContactsPageProps {
   contacts: Contact[];
@@ -26,6 +28,7 @@ interface ContactsPageProps {
   openDetails: (contactId: string) => void;
   openEdit: (c: Contact) => void;
   deleteContact: (contactId: string) => void;
+  onFollowUp?: (contact: Contact) => void;
   inputCls: string;
 }
 
@@ -53,8 +56,48 @@ export default function ContactsPage({
   openDetails,
   openEdit,
   deleteContact,
+  onFollowUp,
   inputCls,
 }: ContactsPageProps) {
+  const [lastMeetingDates, setLastMeetingDates] = useState<Record<string, string>>({});
+
+  // Fetch last meeting date for each contact
+  useEffect(() => {
+    async function fetchMeetingDates() {
+      if (contacts.length === 0) return;
+
+      const contactIds = contacts.map((c) => c.id);
+      const { data, error } = await supabase
+        .from("contact_meetings")
+        .select("contact_id, meeting_date")
+        .in("contact_id", contactIds)
+        .order("meeting_date", { ascending: false });
+
+      if (!error && data) {
+        // Keep only the most recent meeting per contact
+        const dateMap: Record<string, string> = {};
+        for (const meeting of data) {
+          if (!dateMap[meeting.contact_id]) {
+            dateMap[meeting.contact_id] = meeting.meeting_date;
+          }
+        }
+        setLastMeetingDates(dateMap);
+      }
+    }
+
+    fetchMeetingDates();
+  }, [contacts]);
+
+  // Check if contact is stale (30+ days since last meeting)
+  function isStale(contactId: string): boolean {
+    const lastDate = lastMeetingDates[contactId];
+    if (!lastDate) return false; // No meetings yet, not stale
+
+    const today = new Date(todayISODate());
+    const lastMeeting = new Date(lastDate);
+    const daysDiff = Math.floor((today.getTime() - lastMeeting.getTime()) / (1000 * 60 * 60 * 24));
+    return daysDiff >= 30;
+  }
   return (
     <div className="mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-3">
       {/* Add contact — 1/3 */}
@@ -104,11 +147,12 @@ export default function ContactsPage({
           />
 
           <div className="mt-4 rounded-section bg-depth-0/40">
-            <div className="grid grid-cols-[2.2fr_1.4fr_1.2fr_1.1fr_1.0fr_1.0fr] items-center gap-3 px-4 py-3 text-xs uppercase tracking-wider text-white/30 font-medium">
+            <div className="grid grid-cols-[2.2fr_1.4fr_1.2fr_1.0fr_1.0fr_1.0fr_0.9fr] items-center gap-3 px-4 py-3 text-xs uppercase tracking-wider text-white/30 font-medium">
               <div>Name</div>
               <div>Company</div>
               <div>Title</div>
               <div>Details</div>
+              <div>Follow Up</div>
               <div>Edit</div>
               <div>Delete</div>
             </div>
@@ -129,28 +173,38 @@ export default function ContactsPage({
                 const displayName = [c.first_name, c.last_name].filter(Boolean).join(" ") || "\u2014";
                 const li = c.linkedin_url ?? "";
                 const isRecent = i < 3;
+                const stale = isStale(c.id);
 
                 return (
                   <div key={c.id} className="px-4">
-                    <div className={`grid grid-cols-[2.2fr_1.4fr_1.2fr_1.1fr_1.0fr_1.0fr] items-center gap-3 py-3 transition-colors hover:bg-white/[0.02] ${isRecent ? "bg-white/[0.01]" : ""}`}>
+                    <div className={`grid grid-cols-[2.2fr_1.4fr_1.2fr_1.0fr_1.0fr_1.0fr_0.9fr] items-center gap-3 py-3 transition-colors hover:bg-white/[0.02] ${isRecent ? "bg-white/[0.01]" : ""}`}>
                       <div className="min-w-0">
-                        {li ? (
-                          <a
-                            href={ensureUrl(li)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="block truncate font-medium text-glow hover:underline"
-                            title="Open LinkedIn"
-                          >
-                            {displayName}
-                          </a>
-                        ) : (
-                          <div className="truncate font-medium text-white" title={displayName}>
-                            {displayName}
+                        <div className="flex items-center gap-2">
+                          <div className="min-w-0 flex-1">
+                            {li ? (
+                              <a
+                                href={ensureUrl(li)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="block truncate font-medium text-glow hover:underline"
+                                title="Open LinkedIn"
+                              >
+                                {displayName}
+                              </a>
+                            ) : (
+                              <div className="truncate font-medium text-white" title={displayName}>
+                                {displayName}
+                              </div>
+                            )}
+                            <div className="mt-0.5 truncate font-data text-white/30">
+                              {[c.email, c.phone].filter(Boolean).join(" \u2022 ")}
+                            </div>
                           </div>
-                        )}
-                        <div className="mt-0.5 truncate font-data text-white/30">
-                          {[c.email, c.phone].filter(Boolean).join(" \u2022 ")}
+                          {stale && (
+                            <div className="shrink-0 rounded-badge bg-glow/15 px-2 py-1 text-xs font-medium text-glow" title="Last meeting was 30+ days ago">
+                              Stale
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -168,6 +222,18 @@ export default function ContactsPage({
                       >
                         Details
                       </button>
+
+                      {stale && onFollowUp ? (
+                        <button
+                          onClick={() => onFollowUp(c)}
+                          className="w-full rounded-button bg-glow/10 px-3 py-2 text-sm font-medium text-glow transition-colors hover:bg-glow/20 cursor-pointer"
+                          title="Start a follow-up outreach"
+                        >
+                          Follow Up
+                        </button>
+                      ) : (
+                        <div />
+                      )}
 
                       <button
                         onClick={() => openEdit(c)}

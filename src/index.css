@@ -26,6 +26,7 @@
   /* ── Easing (Apple-style) ─────────────────────────── */
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ── Base ───────────────────────────────────────────── */
@@ -65,12 +66,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* ── Select options ─────────────────────────────────── */
@@ -106,19 +107,19 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 
 .living-canvas {
   background:
-    radial-gradient(ellipse 600px 400px, rgba(0, 229, 255, 0.06), transparent),
-    radial-gradient(ellipse 500px 500px, rgba(124, 77, 255, 0.05), transparent),
-    radial-gradient(ellipse 400px 300px, rgba(0, 168, 168, 0.04), transparent);
+    radial-gradient(ellipse 600px 400px, rgba(0, 229, 255, 0.05), transparent),
+    radial-gradient(ellipse 500px 500px, rgba(124, 77, 255, 0.04), transparent),
+    radial-gradient(ellipse 400px 300px, rgba(0, 168, 168, 0.03), transparent);
   background-size: 200% 200%, 200% 200%, 200% 200%;
   animation: canvas-drift 90s ease-in-out infinite;
 }
 
 .living-canvas-auth {
   background:
-    radial-gradient(ellipse 600px 500px, rgba(0, 229, 255, 0.12), transparent),
-    radial-gradient(ellipse 500px 600px, rgba(124, 77, 255, 0.10), transparent),
-    radial-gradient(ellipse 600px 400px, rgba(0, 255, 198, 0.06), transparent),
-    radial-gradient(ellipse 400px 400px, rgba(0, 168, 168, 0.08), transparent);
+    radial-gradient(ellipse 600px 500px, rgba(0, 229, 255, 0.10), transparent),
+    radial-gradient(ellipse 500px 600px, rgba(124, 77, 255, 0.08), transparent),
+    radial-gradient(ellipse 600px 400px, rgba(0, 255, 198, 0.05), transparent),
+    radial-gradient(ellipse 400px 400px, rgba(0, 168, 168, 0.06), transparent);
   background-size: 200% 200%, 200% 200%, 200% 200%, 200% 200%;
   animation: canvas-drift 60s ease-in-out infinite;
 }
@@ -166,12 +167,12 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   will-change: transform, opacity;
 }
 
-/* ── Auth Entry Transition ──────────────────────────── */
+/* ── Auth Entry Transitions ───────────────────────── */
 
 @keyframes auth-enter {
   0% {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(16px);
   }
   100% {
     opacity: 1;
@@ -180,13 +181,29 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 }
 
 .auth-form-enter {
-  animation: auth-enter 0.8s var(--ease-out) forwards;
+  animation: auth-enter 0.7s var(--ease-out) forwards;
+}
+
+@keyframes auth-hero-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-hero-enter {
+  animation: auth-hero-enter 1s var(--ease-out) 0.3s forwards;
+  opacity: 0;
 }
 
 @keyframes auth-title-enter {
   0% {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   100% {
     opacity: 1;
@@ -211,6 +228,13 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 .auth-subtitle-enter {
   animation: auth-subtitle-enter 0.8s var(--ease-out) 0.3s forwards;
   opacity: 0;
+}
+
+/* ── Auth Input Glow ────────────────────────────────── */
+
+.auth-input:focus {
+  border-color: rgba(0, 229, 255, 0.3);
+  box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.1), 0 0 20px rgba(0, 229, 255, 0.06);
 }
 
 /* ── Launch Transition (on sign-in success) ─────────── */
@@ -239,7 +263,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 @keyframes page-enter {
   0% {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
   100% {
     opacity: 1;
@@ -248,7 +272,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 }
 
 .page-enter {
-  animation: page-enter 0.4s var(--ease-out) forwards;
+  animation: page-enter 0.35s var(--ease-out) forwards;
 }
 
 /* ── Breathing Pulse (for attention indicators) ─────── */
@@ -268,6 +292,34 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   animation: breathe 3s ease-in-out infinite;
 }
 
+/* ── Subtle shimmer (for loading states, progress bars) ── */
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.08), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* ── Glow hover (for interactive cards) ─────────────── */
+
+.glow-hover {
+  transition: all 0.3s ease;
+}
+
+.glow-hover:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+  box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.06), inset 0 0 30px rgba(0, 229, 255, 0.02);
+}
+
 /* ── Keyboard Whisper Bar ───────────────────────────── */
 
 .whisper-bar {
@@ -280,8 +332,14 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 
 *:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.3);
+  box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.25);
   border-radius: inherit;
+}
+
+/* ── Smooth transitions on all interactive elements ─── */
+
+button, a, input, select, textarea {
+  transition-timing-function: var(--ease-smooth);
 }
 
 /* ── Reduced Motion ─────────────────────────────────── */
@@ -300,13 +358,15 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   .auth-form-enter,
   .auth-title-enter,
   .auth-subtitle-enter,
+  .auth-hero-enter,
   .page-enter {
     animation: none;
     opacity: 1;
     transform: none;
   }
 
-  .breathe {
+  .breathe,
+  .shimmer {
     animation: none;
   }
 }

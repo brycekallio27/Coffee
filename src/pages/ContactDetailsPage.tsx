@@ -1,6 +1,8 @@
 import Card from "../components/ui/Card";
 import type { Contact, ContactMeeting } from "../types";
 import { ensureUrl } from "../lib/utils";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface ContactDetailsPageProps {
   selectedContact: Contact | null;
@@ -51,6 +53,57 @@ export default function ContactDetailsPage({
   inputCls,
   formatDateLabel,
 }: ContactDetailsPageProps) {
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summary, setSummary] = useState<string>("");
+  const [summaryError, setSummaryError] = useState("");
+
+  async function loadSummary() {
+    if (!selectedContact || summaryLoading) return;
+
+    setSummaryLoading(true);
+    setSummaryError("");
+    try {
+      const response = await fetch("/functions/v1/summarize-contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("supabase.auth.token")}`,
+        },
+        body: JSON.stringify({
+          contact: selectedContact,
+          meetings: meetings.map((m) => ({
+            id: m.id,
+            meeting_date: m.meeting_date,
+            title: m.title,
+            notes: m.notes,
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to generate summary");
+      }
+
+      const data = await response.json();
+      setSummary(data.summary);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to generate summary";
+      setSummaryError(message);
+      toast.error(message);
+    } finally {
+      setSummaryLoading(false);
+    }
+  }
+
+  function handleSummaryToggle() {
+    if (!summaryExpanded && !summary) {
+      loadSummary();
+    }
+    setSummaryExpanded(!summaryExpanded);
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
       {!selectedContact ? (
@@ -143,6 +196,47 @@ export default function ContactDetailsPage({
                     Delete
                   </button>
                 </div>
+              </div>
+            </Card>
+
+            {/* AI Summary */}
+            <Card title="AI Summary" subtitle="Powered by Claude">
+              <div className="grid gap-3">
+                {summaryExpanded ? (
+                  <>
+                    {summaryLoading ? (
+                      <div className="rounded-input bg-depth-1/40 p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-glow/30 border-t-glow" />
+                          <span className="text-sm text-white/60">Generating summary...</span>
+                        </div>
+                      </div>
+                    ) : summaryError ? (
+                      <div className="rounded-input bg-danger/[0.08] p-4">
+                        <p className="text-sm text-danger/70">{summaryError}</p>
+                      </div>
+                    ) : summary ? (
+                      <div className="rounded-input bg-depth-2/60 border-l-4 border-glow p-4">
+                        <p className="text-sm leading-relaxed text-white">{summary}</p>
+                      </div>
+                    ) : null}
+
+                    <button
+                      onClick={handleSummaryToggle}
+                      disabled={summaryLoading}
+                      className="w-full rounded-button bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.08] disabled:opacity-50 cursor-pointer"
+                    >
+                      {summaryLoading ? "Generating..." : "Collapse"}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleSummaryToggle}
+                    className="w-full rounded-button bg-glow/90 px-4 py-2.5 text-sm font-semibold text-depth-0 shadow-[0_0_24px_rgba(0,229,255,0.2)] transition-all hover:bg-glow cursor-pointer"
+                  >
+                    Generate Summary
+                  </button>
+                )}
               </div>
             </Card>
           </div>
