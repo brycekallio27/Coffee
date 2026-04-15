@@ -887,6 +887,62 @@ export default function App() {
     setMeetingDirty((prev) => ({ ...prev, [meetingId]: true }));
   }
 
+  async function importMeetingFromTranscript(
+    contactId: string,
+    transcript: string,
+    meetingDate: string,
+    label: string,
+  ) {
+    const contact = contacts.find((c) => c.id === contactId);
+    const contactName = contact
+      ? [contact.first_name, contact.last_name].filter(Boolean).join(" ")
+      : "";
+    const contactCompany = contact?.company ?? "";
+
+    const { data: fnData, error: fnError } = await supabase.functions.invoke(
+      "process-meeting-notes",
+      {
+        body: {
+          transcript,
+          contact_name: contactName,
+          contact_company: contactCompany,
+          meeting_date: meetingDate,
+        },
+      },
+    );
+
+    if (fnError) {
+      toast.error("Transcript processing failed: " + fnError.message);
+      return;
+    }
+    if (fnData?.error) {
+      toast.error("Transcript processing failed: " + fnData.error);
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { toast.error("Not signed in."); return; }
+
+    const title = label.trim() || fnData.suggested_title || "Meeting";
+    const notes = fnData.formatted_notes ?? "";
+
+    const { error: insErr } = await supabase.from("contact_meetings").insert({
+      owner_id: user.id,
+      contact_id: contactId,
+      meeting_date: meetingDate,
+      title,
+      notes,
+    });
+
+    if (insErr) {
+      toast.error("Failed to save meeting note: " + insErr.message);
+      return;
+    }
+
+    toast.success("Meeting notes extracted and saved!");
+    await loadMeetings(contactId);
+  }
+
   /* ----------------------------- Import page handlers ----------------------------- */
 
   async function onPickCsv(file: File) {
@@ -1373,6 +1429,7 @@ export default function App() {
             deleteContact={deleteContact}
             setPage={setPage}
             setSelectedContactId={setSelectedContactId}
+            importMeetingFromTranscript={importMeetingFromTranscript}
             inputCls={inputCls}
             formatDateLabel={formatDateLabel}
           />

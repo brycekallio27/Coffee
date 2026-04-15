@@ -1,4 +1,5 @@
 import Card from "../components/ui/Card";
+import Modal from "../components/ui/Modal";
 import type { Contact, ContactMeeting } from "../types";
 import { ensureUrl } from "../lib/utils";
 import { useState } from "react";
@@ -25,6 +26,12 @@ interface ContactDetailsPageProps {
   deleteContact: (contactId: string) => void;
   setPage: (page: "contacts") => void;
   setSelectedContactId: (id: string) => void;
+  importMeetingFromTranscript: (
+    contactId: string,
+    transcript: string,
+    meetingDate: string,
+    label: string,
+  ) => Promise<void>;
   inputCls: string;
   formatDateLabel: (iso: string) => string;
 }
@@ -50,10 +57,40 @@ export default function ContactDetailsPage({
   deleteContact,
   setPage,
   setSelectedContactId,
+  importMeetingFromTranscript,
   inputCls,
   formatDateLabel,
 }: ContactDetailsPageProps) {
   const [summaryExpanded, setSummaryExpanded] = useState(false);
+
+  // ── Transcript import modal ──────────────────────────────
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importTranscript, setImportTranscript] = useState("");
+  const [importDate, setImportDate] = useState(new Date().toISOString().slice(0, 10));
+  const [importLabel, setImportLabel] = useState("");
+  const [importing, setImporting] = useState(false);
+
+  async function handleImportTranscript() {
+    if (!selectedContact || !importTranscript.trim()) {
+      toast.error("Paste a meeting transcript first.");
+      return;
+    }
+    setImporting(true);
+    try {
+      await importMeetingFromTranscript(
+        selectedContact.id,
+        importTranscript,
+        importDate,
+        importLabel,
+      );
+      setImportModalOpen(false);
+      setImportTranscript("");
+      setImportLabel("");
+      setImportDate(new Date().toISOString().slice(0, 10));
+    } finally {
+      setImporting(false);
+    }
+  }
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summary, setSummary] = useState<string>("");
   const [summaryError, setSummaryError] = useState("");
@@ -247,12 +284,24 @@ export default function ContactDetailsPage({
               title="Meeting notes"
               subtitle="Each meeting is a folder labeled by date."
               right={
-                <button
-                  onClick={() => loadMeetings(selectedContact.id)}
-                  className="rounded-button bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white cursor-pointer"
-                >
-                  Refresh
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setImportModalOpen(true)}
+                    className="flex items-center gap-1.5 rounded-button bg-glow/[0.08] px-3 py-2 text-sm font-medium text-glow transition-colors hover:bg-glow/15 cursor-pointer"
+                  >
+                    {/* Sparkle icon */}
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                    </svg>
+                    Import from Transcript
+                  </button>
+                  <button
+                    onClick={() => loadMeetings(selectedContact.id)}
+                    className="rounded-button bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white cursor-pointer"
+                  >
+                    Refresh
+                  </button>
+                </div>
               }
             >
               {/* Add meeting form */}
@@ -368,6 +417,84 @@ export default function ContactDetailsPage({
           </div>
         </div>
       )}
+
+      {/* ── Transcript Import Modal ── */}
+      <Modal
+        title="Import from Transcript"
+        open={importModalOpen}
+        onClose={() => !importing && setImportModalOpen(false)}
+      >
+        <div className="grid gap-4">
+          <p className="text-sm text-white/50 leading-relaxed">
+            Paste a transcript from{" "}
+            <span className="text-white/70 font-medium">Otter.ai, Granola, Zoom AI, Fathom, Fireflies</span>
+            {" "}or any other tool. Claude will extract the key details and save them as a structured meeting note.
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <div className="mb-1 text-xs font-medium text-white/35">Meeting date</div>
+              <input
+                type="date"
+                className="w-full rounded-input bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none border border-white/[0.06] focus:border-glow/30"
+                value={importDate}
+                onChange={(e) => setImportDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <div className="mb-1 text-xs font-medium text-white/35">Label (optional)</div>
+              <input
+                className="w-full rounded-input bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-white/25 outline-none border border-white/[0.06] focus:border-glow/30"
+                placeholder='e.g. "Coffee chat"'
+                value={importLabel}
+                onChange={(e) => setImportLabel(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-1 text-xs font-medium text-white/35">Transcript</div>
+            <textarea
+              className="min-h-[200px] w-full rounded-input bg-white/[0.03] px-3 py-2.5 text-sm text-white placeholder:text-white/20 outline-none border border-white/[0.06] focus:border-glow/20 resize-y"
+              placeholder="Paste your full meeting transcript here..."
+              value={importTranscript}
+              onChange={(e) => setImportTranscript(e.target.value)}
+            />
+          </div>
+
+          {/* What Claude extracts */}
+          <div className="rounded-input bg-depth-0/40 px-4 py-3 text-xs text-white/40 space-y-1">
+            <div className="font-medium text-white/50 mb-1.5">Claude will extract:</div>
+            <div className="flex items-center gap-2"><span>✨</span><span>Fun facts — memorable personal details about {selectedContact ? [selectedContact.first_name, selectedContact.last_name].filter(Boolean).join(" ") : "your contact"}</span></div>
+            <div className="flex items-center gap-2"><span>📋</span><span>Action items — specific follow-ups you need to do</span></div>
+            <div className="flex items-center gap-2"><span>💡</span><span>Important details — professional context worth remembering</span></div>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setImportModalOpen(false)}
+              disabled={importing}
+              className="flex-1 rounded-button bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.08] disabled:opacity-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleImportTranscript}
+              disabled={importing || !importTranscript.trim()}
+              className="flex-1 rounded-button bg-glow/90 px-4 py-2.5 text-sm font-semibold text-depth-0 shadow-[0_0_24px_rgba(0,229,255,0.2)] transition-all hover:bg-glow disabled:opacity-50 cursor-pointer"
+            >
+              {importing ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-depth-0/30 border-t-depth-0" />
+                  Extracting...
+                </span>
+              ) : (
+                "Extract & Save"
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
