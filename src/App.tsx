@@ -303,6 +303,19 @@ export default function App() {
 
   /* ----------------------------- Profile load/save ----------------------------- */
 
+  function onboardingSeenKey(userId: string) {
+    return `coffee_onboarding_seen_${userId}`;
+  }
+
+  function markOnboardingSeen() {
+    if (!session?.user?.id) return;
+    try {
+      localStorage.setItem(onboardingSeenKey(session.user.id), "1");
+    } catch {
+      /* localStorage blocked — non-fatal */
+    }
+  }
+
   async function loadProfile() {
     if (!session?.user?.id) return;
 
@@ -366,9 +379,16 @@ export default function App() {
 
       localStorage.removeItem("coffee_pending_signup");
 
-      // Skip onboarding if name was provided via sign-up
-      if (!pending?.full_name?.trim()) {
+      // Skip onboarding if name was provided via sign-up, or the user has already been through it.
+      const alreadySeen = (() => {
+        try { return localStorage.getItem(onboardingSeenKey(session.user.id)) === "1"; }
+        catch { return false; }
+      })();
+      if (!pending?.full_name?.trim() && !alreadySeen) {
         setPage("onboarding");
+      } else {
+        // Name captured during sign-up counts as completing onboarding.
+        markOnboardingSeen();
       }
       return;
     }
@@ -380,8 +400,15 @@ export default function App() {
     setUserCareerInterests((data as any)?.career_interests ?? "");
     setNewEmail(session?.user?.email ?? "");
 
-    if (!(data as any)?.full_name?.trim()) {
+    const alreadySeen = (() => {
+      try { return localStorage.getItem(onboardingSeenKey(session.user.id)) === "1"; }
+      catch { return false; }
+    })();
+    if (!(data as any)?.full_name?.trim() && !alreadySeen) {
       setPage("onboarding");
+    } else if ((data as any)?.full_name?.trim()) {
+      // User has a name — onboarding is done; make sure we don't show it again.
+      markOnboardingSeen();
     }
   }
 
@@ -463,23 +490,49 @@ export default function App() {
         try {
           const text = await parsePdfToText(file);
           updatePayload.resume_text = text;
-        } catch {
+        } catch (parseErr) {
+          console.error("[uploadResume] PDF parse failed", parseErr);
           toast.info("Resume uploaded, but text extraction failed. You can re-parse later.");
         }
       } else {
         toast.info("Non-PDF resume uploaded. Text extraction is only available for PDF files.");
       }
 
-      const { error } = await supabase.from("profiles").update(updatePayload).eq("id", session.user.id);
-      if (error) throw error;
+      // Try full update first; if it fails because `resume_text` column doesn't exist yet
+      // in the deployed DB, retry without it so the URL still persists and the user isn't
+      // left with a silently-failed save.
+      let updateRes = await supabase.from("profiles").update(updatePayload).eq("id", session.user.id);
+      if (
+        updateRes.error &&
+        updatePayload.resume_text !== undefined &&
+        /resume_text/i.test(updateRes.error.message || "")
+      ) {
+        console.error(
+          "[uploadResume] profiles.resume_text column appears to be missing on this DB — " +
+            "run docs/migration_add_profile_columns.sql in Supabase SQL Editor. Retrying without it."
+        );
+        const fallback: { resume_url: string } = { resume_url: updatePayload.resume_url };
+        updateRes = await supabase.from("profiles").update(fallback).eq("id", session.user.id);
+        if (!updateRes.error) {
+          toast.error(
+            "Resume uploaded, but text couldn't be saved — your DB is missing the resume_text column. Run the migration in docs/migration_add_profile_columns.sql."
+          );
+        }
+      }
+      if (updateRes.error) {
+        console.error("[uploadResume] profile update failed", updateRes.error);
+        throw updateRes.error;
+      }
 
       await loadProfile();
       toast.success("Resume uploaded.");
     } catch (e: any) {
-      toast.error(
-        e?.message ??
-        "Resume upload failed. Make sure you created a Storage bucket named 'resumes' (public is easiest)."
-      );
+      console.error("[uploadResume] failed", e);
+      const msg =
+        e?.message ||
+        e?.error_description ||
+        "Resume upload failed. Make sure the Storage bucket 'resumes' exists (public) and profiles RLS allows updates.";
+      toast.error(msg);
     } finally {
       setSavingProfile(false);
     }
@@ -1467,6 +1520,7 @@ export default function App() {
             savingProfile={savingProfile}
             setPage={setPage}
             inputCls={inputCls}
+            completeOnboarding={markOnboardingSeen}
           />
         ) : null}
 

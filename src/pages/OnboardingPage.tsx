@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { toast } from "sonner";
 import type { Page } from "../types";
 import Logo from "../components/ui/Logo";
 
@@ -12,12 +13,20 @@ interface OnboardingPageProps {
   savingProfile: boolean;
   setPage: (page: Page) => void;
   inputCls: string;
+  /** Marks onboarding as finished so it never auto-opens again for this user. */
+  completeOnboarding: () => void;
 }
 
-const STEPS = [
-  { title: "What should we call you?", sub: "This is how you'll appear across Coffee." },
-  { title: "Connect your profile", sub: "Add your LinkedIn and resume for smarter outreach." },
-  { title: "You're all set!", sub: "Your workspace is ready. Let's build your network." },
+type Step = {
+  key: "name" | "linkedin" | "resume";
+  title: string;
+  sub: string;
+};
+
+const STEPS: readonly Step[] = [
+  { key: "name", title: "What should we call you?", sub: "This is how you'll appear across Coffee." },
+  { key: "linkedin", title: "Add your LinkedIn", sub: "So we can personalize outreach to match your profile." },
+  { key: "resume", title: "Upload your resume", sub: "Drop a PDF so Coffee can tailor job applications for you." },
 ] as const;
 
 const primaryBtn =
@@ -25,6 +34,9 @@ const primaryBtn =
 
 const secondaryBtn =
   "rounded-xl bg-white/[0.04] px-6 py-3 text-sm font-medium text-white/50 transition-all duration-200 hover:bg-white/[0.08] hover:text-white cursor-pointer";
+
+const skipBtn =
+  "text-xs font-medium text-white/35 transition-colors duration-200 hover:text-white/70 cursor-pointer";
 
 /* ── Floating label input ── */
 function FloatingInput({
@@ -76,12 +88,19 @@ export default function OnboardingPage({
   uploadResume,
   savingProfile,
   setPage,
+  completeOnboarding,
 }: OnboardingPageProps) {
   const [step, setStep] = useState(0);
   const [stepping, setStepping] = useState(false);
+  const [resumeFileName, setResumeFileName] = useState<string | null>(null);
+  const [resumeUploading, setResumeUploading] = useState(false);
+  const [finishing, setFinishing] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const canAdvanceStep0 = displayName.trim().length > 0;
+  const currentStep = STEPS[step];
+  const isLastStep = step === STEPS.length - 1;
+
+  const canAdvanceName = displayName.trim().length > 0;
 
   const animateStep = (dir: 1 | -1, cb: () => void) => {
     if (stepping) return;
@@ -112,10 +131,43 @@ export default function OnboardingPage({
   const next = () => animateStep(1, () => setStep((s) => Math.min(s + 1, STEPS.length - 1)));
   const back = () => animateStep(-1, () => setStep((s) => Math.max(s - 1, 0)));
 
-  const handleFinish = async () => {
-    await saveProfile();
+  async function handleResumePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setResumeFileName(f.name);
+    setResumeUploading(true);
+    try {
+      await uploadResume(f);
+    } finally {
+      setResumeUploading(false);
+    }
+  }
+
+  async function handleSkip() {
+    // Persist anything they already entered so it shows up in Settings.
+    try {
+      if (displayName.trim() || myLinkedInUrl.trim()) {
+        await saveProfile();
+      }
+    } catch {
+      /* saveProfile surfaces its own toast; swallow here so skip still works */
+    }
+    completeOnboarding();
+    toast.info("You can finish setting up your profile anytime in Settings.");
     setPage("contacts");
-  };
+  }
+
+  async function handleFinish() {
+    setFinishing(true);
+    try {
+      await saveProfile();
+      completeOnboarding();
+      toast.success("You're in. Welcome to Coffee.");
+      setPage("contacts");
+    } finally {
+      setFinishing(false);
+    }
+  }
 
   const progress = ((step + 1) / STEPS.length) * 100;
 
@@ -154,15 +206,15 @@ export default function OnboardingPage({
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-white mb-1.5">
-              {STEPS[step].title}
+              {currentStep.title}
             </h1>
             <p className="text-sm text-white/35">
-              {STEPS[step].sub}
+              {currentStep.sub}
             </p>
           </div>
 
-          {/* Step 0: Name */}
-          {step === 0 && (
+          {/* Step: Name */}
+          {currentStep.key === "name" && (
             <div className="space-y-5">
               <FloatingInput
                 label="Display name"
@@ -170,10 +222,13 @@ export default function OnboardingPage({
                 onChange={setDisplayName}
                 placeholder="e.g. Bryce K."
               />
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between pt-1">
+                <button className={skipBtn} onClick={handleSkip}>
+                  Skip setup
+                </button>
                 <button
                   className={primaryBtn}
-                  disabled={!canAdvanceStep0}
+                  disabled={!canAdvanceName}
                   onClick={next}
                 >
                   Continue
@@ -182,34 +237,27 @@ export default function OnboardingPage({
             </div>
           )}
 
-          {/* Step 1: Profile */}
-          {step === 1 && (
-            <div className="space-y-4">
+          {/* Step: LinkedIn */}
+          {currentStep.key === "linkedin" && (
+            <div className="space-y-5">
               <FloatingInput
                 label="LinkedIn URL"
                 value={myLinkedInUrl}
                 onChange={setMyLinkedInUrl}
                 placeholder="https://linkedin.com/in/you"
               />
-              <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] border-dashed p-5 text-center transition-all hover:border-glow/20 hover:bg-white/[0.04]">
-                <svg className="mx-auto h-7 w-7 text-white/15 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
-                </svg>
-                <p className="text-xs text-white/30 mb-2">Drop your resume here (PDF)</p>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx,application/pdf"
-                  className="block w-full text-xs text-white/40 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-glow/[0.08] file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-glow hover:file:bg-glow/15"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) uploadResume(f);
-                  }}
-                />
-              </div>
-              <div className="flex justify-between pt-1">
-                <button className={secondaryBtn} onClick={back}>
-                  Back
-                </button>
+              <p className="text-[11px] text-white/25 px-1">
+                Optional — you can add this later in Settings.
+              </p>
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-4">
+                  <button className={secondaryBtn} onClick={back}>
+                    Back
+                  </button>
+                  <button className={skipBtn} onClick={handleSkip}>
+                    Skip setup
+                  </button>
+                </div>
                 <button className={primaryBtn} onClick={next}>
                   Continue
                 </button>
@@ -217,33 +265,56 @@ export default function OnboardingPage({
             </div>
           )}
 
-          {/* Step 2: Done */}
-          {step === 2 && (
-            <div className="space-y-6">
-              <div className="flex flex-col items-center py-6">
-                {/* Success animation */}
-                <div className="relative mb-5">
-                  <div className="absolute inset-0 rounded-full bg-glow/20 blur-xl animate-pulse" />
-                  <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-glow/10 border border-glow/20">
-                    <svg className="h-10 w-10 text-glow" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                </div>
-                <p className="text-sm text-white/35 text-center max-w-xs">
-                  Everything's saved. You can always update your profile in Settings later.
+          {/* Step: Resume */}
+          {currentStep.key === "resume" && (
+            <div className="space-y-4">
+              <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] border-dashed p-5 text-center transition-all hover:border-glow/20 hover:bg-white/[0.04]">
+                <svg
+                  className="mx-auto h-7 w-7 text-white/15 mb-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"
+                  />
+                </svg>
+                <p className="text-xs text-white/30 mb-2">
+                  {resumeFileName
+                    ? `Uploaded: ${resumeFileName}`
+                    : "Drop your resume here (PDF)"}
                 </p>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,application/pdf"
+                  className="block w-full text-xs text-white/40 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-glow/[0.08] file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-glow hover:file:bg-glow/15"
+                  onChange={handleResumePick}
+                />
+                {resumeUploading && (
+                  <p className="mt-2 text-[11px] text-glow/60">Uploading…</p>
+                )}
               </div>
-              <div className="flex justify-between">
-                <button className={secondaryBtn} onClick={back}>
-                  Back
-                </button>
+              <p className="text-[11px] text-white/25 px-1">
+                Optional — you can upload this later in Settings.
+              </p>
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-4">
+                  <button className={secondaryBtn} onClick={back}>
+                    Back
+                  </button>
+                  <button className={skipBtn} onClick={handleSkip}>
+                    Skip setup
+                  </button>
+                </div>
                 <button
                   className={primaryBtn}
-                  disabled={savingProfile}
+                  disabled={savingProfile || finishing || resumeUploading}
                   onClick={handleFinish}
                 >
-                  {savingProfile ? "Setting up..." : "Enter Coffee"}
+                  {finishing || savingProfile ? "Setting up…" : isLastStep ? "Enter Coffee" : "Continue"}
                 </button>
               </div>
             </div>
