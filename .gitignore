@@ -2,10 +2,8 @@
 node_modules
 
 # Build output
-dist
-dist-electron
-build
-electron
+/dist
+/dist-electron
 .vite
 
 # Environment variables
@@ -20,3 +18,9 @@ electron
 *.swo
 *~
 .DS_Store
+
+# Internal working notes (not part of the shipped app)
+CLAUDE.md
+TASKS.md
+task.md
+.claude/

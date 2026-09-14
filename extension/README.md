@@ -1,21 +1,21 @@
-# Coffee? – LinkedIn Contact Importer Extension
+# Coffee ☕ – LinkedIn Contact Importer Extension
 
-Chrome extension (Manifest V3) that scrapes LinkedIn profiles and adds contacts directly to Coffee?.
+Chrome extension (Manifest V3) that scrapes LinkedIn profiles and adds contacts directly to Coffee ☕.
 
 ## Installing
 
 1. Open Chrome → `chrome://extensions`
 2. Enable **Developer mode** (top right toggle)
 3. Click **Load unpacked** → select this `extension/` folder
-4. The Coffee? icon appears in your toolbar
+4. The Coffee ☕ icon appears in your toolbar
 
 ## Usage
 
 1. Navigate to any `linkedin.com/in/…` profile
-2. Click the Coffee? extension icon
-3. Sign in with your Coffee? account (email + password) — stored locally, one-time
+2. Click the Coffee ☕ extension icon
+3. Sign in with your Coffee ☕ account (email + password) — stored locally, one-time
 4. Review / edit the pre-filled contact fields
-5. Click **Add to Coffee?**
+5. Click **Add to Coffee ☕**
 
 ## What it scrapes
 
@@ -33,4 +33,4 @@ Chrome extension (Manifest V3) that scrapes LinkedIn profiles and adds contacts 
 
 - Auth token is stored in `chrome.storage.local` on your device only
 - No data is sent anywhere except directly to your Supabase project
-- Requires an active Coffee? account
+- Requires an active Coffee ☕ account
