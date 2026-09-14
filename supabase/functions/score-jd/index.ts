@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.1/http/server.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -46,6 +47,21 @@ serve(async (req) => {
   // CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: CORS });
+  }
+
+  // ── Auth: reject unauthenticated callers before spending Anthropic API credits ──
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return json({ error: "Missing Authorization header" }, 401);
+  }
+  const userClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const { data: { user }, error: userError } = await userClient.auth.getUser();
+  if (userError || !user) {
+    return json({ error: "Unauthorized" }, 401);
   }
 
   try {

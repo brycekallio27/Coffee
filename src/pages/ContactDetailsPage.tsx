@@ -2,6 +2,7 @@ import Card from "../components/ui/Card";
 import Modal from "../components/ui/Modal";
 import type { Contact, ContactMeeting } from "../types";
 import { ensureUrl } from "../lib/utils";
+import { supabase } from "../lib/supabase";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -101,13 +102,8 @@ export default function ContactDetailsPage({
     setSummaryLoading(true);
     setSummaryError("");
     try {
-      const response = await fetch("/functions/v1/summarize-contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionStorage.getItem("supabase.auth.token")}`,
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke("summarize-contact", {
+        body: {
           contact: selectedContact,
           meetings: meetings.map((m) => ({
             id: m.id,
@@ -115,15 +111,10 @@ export default function ContactDetailsPage({
             title: m.title,
             notes: m.notes,
           })),
-        }),
+        },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate summary");
-      }
-
-      const data = await response.json();
+      if (error) throw error;
       setSummary(data.summary);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to generate summary";
