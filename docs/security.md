@@ -1,64 +1,48 @@
 # Security Audit Report
 
-**Date:** 2026-03-12
+**Date:** 2026-09-14
 **Dependencies Pinned:** All production and dev dependencies pinned to exact versions per `package.json`
 
 ## Summary
 
-npm audit identified 5 vulnerabilities (1 moderate, 3 high, 1 critical) as of this date. These vulnerabilities are in transitive dependencies used by dev tools and build infrastructure, not in direct production dependencies.
+Pre-launch audit ahead of hosting the app for real users. Found and fixed three unauthenticated Supabase Edge Functions that let anyone on the internet burn the project's Anthropic API key, patched dependency vulnerabilities down from 40 to 5 (all remaining require major-version bumps to build-only tooling), removed an unused dependency, and updated two AI edge functions off deprecated Claude model snapshots.
 
-## Vulnerabilities Found
+## Findings Fixed This Audit
 
-### Critical (1)
+### HIGH — Unauthenticated Edge Functions (unrestricted use of a paid API key)
 
-- **basic-ftp < 5.2.0** — Path Traversal Vulnerability in `downloadToDir()` method
-  - Location: Transitive dependency (pulled in by electron-builder toolchain)
-  - Risk: Low in practice — affects FTP operations during build only
-  - Status: Awaiting upstream patch availability
+`summarize-contact`, `score-jd`, and `process-meeting-notes` had no application-level check that the caller was a signed-in Coffee user. Supabase's platform `verify_jwt` gate does not protect against this on its own — it accepts the public anon key, which ships in every client bundle and is visible in the Chrome extension manifest — so any caller who knew (or found) the function URL could invoke it and consume `ANTHROPIC_API_KEY` for free, with no rate limit.
 
-### High (3)
+**Fix:** all three functions now verify the caller's JWT via `supabase.auth.getUser()` before doing any work, matching the pattern already used correctly in `exchange-google-token` and `create-calendar-event`. Deployed to the live project.
 
-- **minimatch — Multiple ReDoS (Regular Expression Denial of Service) vulnerabilities**
-  - Via repeated wildcards, GLOBSTAR segments, and nested extglobs
-  - Location: Multiple transitive copies in @electron/universal, @typescript-eslint/typescript-estree, app-builder-lib, cacache, filelist
-  - Risk: Build-time only (not used in production code)
-  - Status: Awaiting upstream patch in affected dependencies
+### MEDIUM — Broken AI Summary feature (correctness, not security)
 
-- **rollup 4.0.0 – 4.58.0** — Arbitrary File Write via Path Traversal
-  - Location: Transitive dependency (Vite build toolchain)
-  - Risk: Build-time only
-  - Status: Awaiting upstream patch
+`ContactDetailsPage.tsx`'s "AI Summary" button called `fetch("/functions/v1/summarize-contact", ...)` — a relative path with no proxy configured, so in production it would hit the app's own Netlify origin (404/index.html) instead of Supabase. It also read the auth token from `sessionStorage.getItem("supabase.auth.token")`, a key Supabase's client never writes to (it uses `localStorage` under a project-specific key). The feature was non-functional end-to-end. Fixed to use `supabase.functions.invoke(...)`, the same working pattern used elsewhere in the app.
 
-- **tar <= 7.5.10** — Hardlink/Symlink Path Traversal
-  - Location: Transitive dependency
-  - Risk: Build-time extraction only
-  - Status: Awaiting upstream patch
+### LOW — Deprecated Claude model snapshots
 
-### Moderate (1)
+`summarize-contact`, `score-jd`, and `process-meeting-notes` targeted `claude-3-5-sonnet-20241022` / `claude-3-5-haiku-20241022`. Updated to current models (`claude-sonnet-5`, `claude-haiku-4-5-20251001`).
 
-- **ajv < 6.14.0** — ReDoS when using `$data` option
-  - Location: Transitive dependency
-  - Risk: Build-time validation only
-  - Status: Awaiting upstream patch
+### Not fixed — flag before ever distributing the desktop build
 
-## Mitigation Strategy
+`electron-builder`'s config bundles `.env.local` — which contains `SUPABASE_SERVICE_ROLE_KEY` — into every packaged `.dmg`/`.zip` as an `extraResource`. The service role key bypasses Row-Level Security entirely. Today this only matters if the packaged desktop app is shared with anyone outside this machine — **do not distribute the Electron build until this is addressed** (e.g. desktop worker re-architected to use the user's own session instead of the service role key).
 
-1. **No direct production dependencies affected.** All vulnerabilities are in transitive dev/build dependencies (electron-builder, Vite, ESLint toolchain).
+## npm audit
 
-2. **Monitor upstream fixes:** As patches become available in electron-builder, Vite, and their dependencies, dependency updates will pull fixes automatically.
+Went from 40 vulnerabilities (4 critical, 30 high) down to 5 high, by:
+- Removing the unused `papaparse` dependency
+- Bumping `vite`, `electron`, `electron-builder`, `concurrently` to their patched versions (non-breaking)
+- Applying `npm audit fix` for `brace-expansion`
 
-3. **Dependency pinning:** All versions are now pinned to exact versions (see `package.json`). This ensures reproducible builds and easy audit trail.
+Remaining 5 high-severity findings all require a **major** version bump (`electron` 40→44, `puppeteer` 24→25) to fix, and are confined to build/install-time tooling (Electron packaging, Chromium download/extraction for the local `scripts/worker.ts`) — not shipped to the production web bundle. Deferred pending a scoped test of the desktop build after a major bump.
 
-4. **Next audit:** Re-run `npm audit` after:
-   - Major dependency updates
-   - New npm package releases (especially electron-builder, Vite)
-   - Before production deployments
+## Row-Level Security
 
-## Recommendations
+All tables (`contacts`, `profiles`, `contact_meetings`, `applications`, `watchlist_targets`, `scheduled_outreach`) have RLS enabled with `auth.uid() = owner_id` (or `= id` for `profiles`) policies. No gaps found.
 
-- Keep electron-builder and Vite updated to latest stable versions as patches are released.
-- Avoid any FTP operations outside of build tooling.
-- Monitor GitHub advisories for these packages: https://github.com/advisories
+## Resume storage
+
+The `resumes` Storage bucket is public, with objects keyed by `<user_id>/resume.<ext>`. Anyone who obtains a user's UUID could fetch their resume directly. UUIDs aren't guessable, and no code path currently exposes another user's UUID client-side, so this is a defense-in-depth note rather than an active vulnerability — worth revisiting if the bucket's contents become more sensitive.
 
 ## How to Re-audit
 

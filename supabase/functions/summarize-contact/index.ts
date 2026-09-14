@@ -122,7 +122,7 @@ Write the summary in a conversational, friendly tone. Keep it brief and actionab
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-sonnet-5",
         max_tokens: 200,
         messages: [
           {
